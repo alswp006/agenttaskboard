@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { generateWorkPackets } from "../pipeline/design/generateWorkPackets";
 
 /**
  * AC-1: Large SPEC with CC-1~CC-10 + 5 Core Features
@@ -420,7 +421,6 @@ describe("AC-3: 스키마 강제 (tool_use 기반, 정규식 추출 금지)", ()
     expect(result).toBeDefined();
 
     // Assert: callStructured was called multiple times for schema validation + retry
-    expect(mockCallStructured).toHaveBeenCalledTimes(expect.any(Number));
     expect(mockCallStructured.mock.calls.length).toBeGreaterThan(1);
 
     // Assert: Responses passed validation or were marked failed
@@ -616,30 +616,3 @@ describe("Chunking: 청크 분할 & 순차 처리", () => {
     expect(result.packets).toHaveLength(overviewPackets);
   });
 });
-});
-
-// ============================================================================
-// Helper: generateWorkPackets function signature
-// ============================================================================
-
-/**
- * Generates work packets from a SPEC via chunked LLM calls.
- *
- * Flow:
- * 1. Call callStructured with "overview" prompt → get WorkPacketOverview[]
- * 2. For each overview, call callStructured with "detail" prompt → get WorkPacket
- * 3. On schema error, retry up to maxRetries times
- * 4. On final failure, mark packet status='failed' and continue
- * 5. Return { packets: [...], failedIds: [...] }
- */
-async function generateWorkPackets(
-  spec: any,
-  callStructured: (prompt: string, schema?: any) => Promise<any>,
-  options?: { maxRetries?: number }
-): Promise<GenerateWorkPacketsResult> {
-  // This is a placeholder — the actual implementation will be in src/pipeline/design/generateWorkPackets.ts
-  // For now, throw to indicate not implemented
-  throw new Error(
-    "generateWorkPackets not yet implemented — Coder will implement based on tests"
-  );
-}

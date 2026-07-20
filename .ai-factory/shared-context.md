@@ -6,4 +6,6 @@
   pipeline/
     design/
     llm/
+    plainjs.js
+    runner.ts
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.

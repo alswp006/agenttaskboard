@@ -1,4 +1,5 @@
 import type { CallStructured, CallStructuredCallOptions, JSONSchema } from "../design/schemas";
+import { TruncatedResponseError } from "./parseJsonResponse";
 
 export interface CallStructuredConfig {
   apiKey: string;
@@ -55,7 +56,15 @@ export function createCallStructured(config: CallStructuredConfig): CallStructur
 
     const data = (await response.json()) as {
       content?: Array<{ type: string; input?: unknown }>;
+      stop_reason?: string;
     };
+
+    if (data.stop_reason === "max_tokens") {
+      throw new TruncatedResponseError(
+        "TruncatedResponseError: callStructured response truncated (stop_reason=max_tokens)",
+        data.stop_reason
+      );
+    }
 
     const toolUseBlock = (data.content ?? []).find((block) => block.type === "tool_use");
     if (!toolUseBlock) {

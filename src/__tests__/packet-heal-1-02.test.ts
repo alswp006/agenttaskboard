@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  parseJsonResponse,
+  TruncatedResponseError,
+  ParseErrorWithContext,
+} from "@/pipeline/llm/parseJsonResponse";
+import { runner } from "@/pipeline/runner";
 
 // AC-1: max_tokens 절단 응답 감지 및 split-retry 실행
 describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
   it("should throw TruncatedResponseError when stop_reason is 'max_tokens'", () => {
-    const { parseJsonResponse } = require("@/pipeline/llm/parseJsonResponse");
 
     const truncatedResponse = {
       stop_reason: "max_tokens",
@@ -16,7 +21,6 @@ describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
   });
 
   it("should include stop_reason in TruncatedResponseError message", () => {
-    const { parseJsonResponse, TruncatedResponseError } = require("@/pipeline/llm/parseJsonResponse");
 
     const truncatedResponse = {
       stop_reason: "max_tokens",
@@ -26,15 +30,15 @@ describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
     try {
       parseJsonResponse(truncatedResponse);
       throw new Error("Should have thrown TruncatedResponseError");
-    } catch (e) {
-      expect(e instanceof TruncatedResponseError || e.name === "TruncatedResponseError").toBe(true);
-      expect(e.message).toContain("max_tokens");
-      expect(e.stopReason).toBe("max_tokens");
+    } catch (e: any) {
+      const error = e as any;
+      expect(error instanceof TruncatedResponseError || error.name === "TruncatedResponseError").toBe(true);
+      expect(error.message).toContain("max_tokens");
+      expect(error.stopReason).toBe("max_tokens");
     }
   });
 
   it("should trigger split-retry mechanism when truncation detected", async () => {
-    const { parseJsonResponse, TruncatedResponseError } = require("@/pipeline/llm/parseJsonResponse");
 
     const mockRetryFn = vi.fn().mockResolvedValue({ success: true });
 
@@ -46,7 +50,7 @@ describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
 
     try {
       await parseJsonResponse(truncatedResponse, { splitRetryFn: mockRetryFn });
-    } catch (e) {
+    } catch (e: any) {
       // Expected to throw after retries
       expect(e instanceof TruncatedResponseError || e.name === "TruncatedResponseError").toBe(true);
     }
@@ -56,7 +60,6 @@ describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
   });
 
   it("should attempt max 2 levels of split-retry before giving up", async () => {
-    const { parseJsonResponse } = require("@/pipeline/llm/parseJsonResponse");
 
     const callCount = { value: 0 };
     const mockRetryFn = vi.fn().mockImplementation(() => {
@@ -79,7 +82,7 @@ describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
 
     try {
       await parseJsonResponse(truncatedResponse, { splitRetryFn: mockRetryFn });
-    } catch (e) {
+    } catch (e: any) {
       // Expected
     }
 
@@ -91,8 +94,6 @@ describe("AC-1: LLM 응답 절단 감지 (max_tokens)", () => {
 // AC-2: JSON 파싱 실패 시 상세 에러 로깅
 describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () => {
   it("should include stop_reason in parse error details", () => {
-    const { parseJsonResponse, ParseErrorWithContext } = require("@/pipeline/llm/parseJsonResponse");
-
     const malformedResponse = {
       stop_reason: "end_turn",
       content: '{"invalid json": [1,2,3',
@@ -101,15 +102,13 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
     try {
       parseJsonResponse(malformedResponse);
       throw new Error("Should have thrown parse error");
-    } catch (e) {
+    } catch (e: any) {
       expect(e.stopReason).toBe("end_turn");
       expect(e.name).toBe("ParseErrorWithContext");
     }
   });
 
   it("should include total content length in error details", () => {
-    const { parseJsonResponse } = require("@/pipeline/llm/parseJsonResponse");
-
     const responseContent = '{"data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}';
     const malformedResponse = {
       stop_reason: "end_turn",
@@ -119,15 +118,13 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
     try {
       parseJsonResponse(malformedResponse);
       throw new Error("Should have thrown parse error");
-    } catch (e) {
+    } catch (e: any) {
       expect(e.totalLength).toBe(malformedResponse.content.length);
       expect(e.totalLength).toBeGreaterThan(0);
     }
   });
 
   it("should include 200-char context before and after parse failure point", () => {
-    const { parseJsonResponse } = require("@/pipeline/llm/parseJsonResponse");
-
     // Create a response with known structure to test context extraction
     const prefix = 'prefix_' + 'x'.repeat(250); // 257 chars
     const failurePoint = '🔴'; // Invalid JSON at this point
@@ -142,7 +139,7 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
     try {
       parseJsonResponse(malformedResponse);
       throw new Error("Should have thrown parse error");
-    } catch (e) {
+    } catch (e: any) {
       // Error should have contextBefore and contextAfter fields
       expect(e.contextBefore).toBeDefined();
       expect(e.contextAfter).toBeDefined();
@@ -162,8 +159,6 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
   });
 
   it("should log error details to pipeline_events", () => {
-    const { parseJsonResponse } = require("@/pipeline/llm/parseJsonResponse");
-
     // Mock pipeline_events recorder
     const mockPipelineEvents = vi.fn();
 
@@ -175,7 +170,7 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
     try {
       parseJsonResponse(malformedResponse, { recordEvent: mockPipelineEvents });
       throw new Error("Should have thrown parse error");
-    } catch (e) {
+    } catch (e: any) {
       // Verify event was recorded
       expect(mockPipelineEvents).toHaveBeenCalled();
 
@@ -193,8 +188,6 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
   });
 
   it("should capture error position within response", () => {
-    const { parseJsonResponse } = require("@/pipeline/llm/parseJsonResponse");
-
     const responseContent = '{"valid": "data", "invalid": 🔴}';
     const malformedResponse = {
       stop_reason: "end_turn",
@@ -204,7 +197,7 @@ describe("AC-2: JSON 파싱 실패 로깅 (stop_reason + 길이 + context)", () 
     try {
       parseJsonResponse(malformedResponse);
       throw new Error("Should have thrown parse error");
-    } catch (e) {
+    } catch (e: any) {
       expect(e.failurePosition).toBeDefined();
       expect(typeof e.failurePosition).toBe("number");
       expect(e.failurePosition).toBeGreaterThanOrEqual(0);
@@ -236,8 +229,6 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
   });
 
   it("should catch exceptions in generateWorkPackets and not exit process", async () => {
-    const { runner } = require("@/pipeline/runner");
-
     const mockRecordEvent = vi.fn();
     const mockEnqueueHeal = vi.fn().mockResolvedValue({ queueId: "heal-001" });
 
@@ -259,8 +250,6 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
   });
 
   it("should record heal_started event when exception occurs", async () => {
-    const { runner } = require("@/pipeline/runner");
-
     const mockRecordEvent = vi.fn();
     const mockEnqueueHeal = vi.fn().mockResolvedValue({ queueId: "heal-001" });
 
@@ -279,7 +268,7 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
     );
 
     expect(healEventCall).toBeDefined();
-    expect(healEventCall[0]).toMatchObject({
+    expect(healEventCall![0]).toMatchObject({
       type: "heal_started",
       originalError: expect.any(String),
       timestamp: expect.any(Number),
@@ -287,8 +276,6 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
   });
 
   it("should enqueue packet to heal queue after exception", async () => {
-    const { runner } = require("@/pipeline/runner");
-
     const mockRecordEvent = vi.fn();
     const mockEnqueueHeal = vi.fn().mockResolvedValue({ queueId: "heal-001" });
 
@@ -315,8 +302,6 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
   });
 
   it("should include error details in heal event", async () => {
-    const { runner } = require("@/pipeline/runner");
-
     const mockRecordEvent = vi.fn();
     const mockEnqueueHeal = vi.fn().mockResolvedValue({ queueId: "heal-002" });
 
@@ -336,12 +321,10 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
       (call) => call[0].type === "heal_started"
     );
 
-    expect(healEvent[0].originalError).toContain(errorMessage);
+    expect(healEvent![0].originalError).toContain(errorMessage);
   });
 
   it("should continue processing after heal_started (no crash)", async () => {
-    const { runner } = require("@/pipeline/runner");
-
     const mockRecordEvent = vi.fn();
     const mockEnqueueHeal = vi.fn().mockResolvedValue({ queueId: "heal-003" });
 
@@ -364,8 +347,6 @@ describe("AC-3: 워크패킷 생성 단계 예외 → heal_started 이벤트 기
 // Integration test: Full flow from truncation to heal
 describe("Integration: LLM truncation → parse error → heal queue", () => {
   it("should flow from max_tokens through recovery without crash", async () => {
-    const { parseJsonResponse, runner } = require("@/pipeline/llm/parseJsonResponse");
-
     const mockRecordEvent = vi.fn();
     const mockEnqueueHeal = vi.fn().mockResolvedValue({ queueId: "heal-int-001" });
     const mockRetryFn = vi.fn().mockRejectedValue(new Error("Max retries exceeded"));
@@ -379,7 +360,7 @@ describe("Integration: LLM truncation → parse error → heal queue", () => {
     // This should fail to parse and trigger recovery
     try {
       await parseJsonResponse(llmResponse, { splitRetryFn: mockRetryFn });
-    } catch (e) {
+    } catch (e: any) {
       // Expected: TruncatedResponseError or ParseErrorWithContext
       expect(e).toBeDefined();
     }

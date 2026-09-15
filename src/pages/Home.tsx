@@ -62,6 +62,11 @@ export default function Home() {
   );
 
   function handleGenerateClick() {
+    if (flows.length >= FLOW_LIMIT) {
+      fireHaptic('error');
+      showToast(`플로우는 최대 ${FLOW_LIMIT}개까지 만들 수 있어요`, 'top');
+      return;
+    }
     navigate('/generate');
   }
 
@@ -80,7 +85,7 @@ export default function Home() {
       {failedCount > 0 && (
         <>
           <ListRow
-            data-testid="home-failed-alert"
+            data-testid="home-failure-alert"
             contents={<ListRow.Texts type="1RowTypeA" top={`실패한 실행 ${failedCount}건이 있어요`} />}
             right={
               <Badge size="medium" variant="weak" color="red">

@@ -164,7 +164,7 @@ export default function Builder() {
           onClick={() => setSheet('trigger')}
           style={{ all: 'unset', display: 'block', width: '100%', cursor: 'pointer' }}
         >
-          <Card testId="trigger-input-card">
+          <Card testId="stage-card-trigger">
             <ListRow
               contents={
                 <ListRow.Texts type="Right2RowTypeA" top="트리거 · 입력" bottom={`${triggerLine} · ${inputSummary(draft.input)}`} />
@@ -188,7 +188,7 @@ export default function Builder() {
           onClick={() => setSheet('ai')}
           style={{ all: 'unset', display: 'block', width: '100%', cursor: 'pointer' }}
         >
-          <Card testId="ai-step-card">
+          <Card testId="stage-card-ai">
             <ListRow contents={<ListRow.Texts type="Right2RowTypeA" top="AI 처리" bottom={aiStepLine} />} />
           </Card>
         </button>
@@ -208,7 +208,7 @@ export default function Builder() {
           onClick={() => setSheet('actions')}
           style={{ all: 'unset', display: 'block', width: '100%', cursor: 'pointer' }}
         >
-          <Card testId="actions-card">
+          <Card testId="stage-card-action">
             <ListRow contents={<ListRow.Texts type="Right2RowTypeA" top="액션" bottom={actionsLine} />} />
           </Card>
         </button>

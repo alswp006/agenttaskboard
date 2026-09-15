@@ -12,6 +12,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // Android 7+/iOS 16+ 호환 — 구형 WebView에서 안전하게 동작하는 타깃.
+    target: ["es2017", "safari16"],
     // @apps-in-toss/web-framework는 절대 external 금지.
     // SDK는 importmap이 아닌 window.ReactNativeWebView 글로벌로 통신하므로
     // 번들에 포함해야 정상 동작. external 설정 시 bare specifier가 번들 첫 줄에

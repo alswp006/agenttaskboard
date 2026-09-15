@@ -76,6 +76,27 @@ export function mockTds() {
       },
     ),
 
+    ConfirmDialog: Object.assign(
+      ({ open, title, description, cancelButton, confirmButton, onClose }: any) =>
+        open
+          ? React.createElement(
+              "div",
+              { role: "dialog", "aria-label": title },
+              React.createElement("h2", null, title),
+              React.createElement("p", null, description),
+              cancelButton,
+              confirmButton,
+              React.createElement("button", { onClick: onClose, hidden: true, "aria-hidden": true }),
+            )
+          : null,
+      {
+        Title: ({ children }: any) => React.createElement(React.Fragment, null, children),
+        Description: ({ children }: any) => React.createElement(React.Fragment, null, children),
+        CancelButton: ({ children, onClick }: any) => React.createElement("button", { onClick }, children),
+        ConfirmButton: ({ children, onClick }: any) => React.createElement("button", { onClick }, children),
+      },
+    ),
+
     Toast: ({ open, text, position }: any) =>
       open
         ? React.createElement("div", { role: "status", "data-position": position }, text)
@@ -119,26 +140,32 @@ export function mockTds() {
     TextButton: ({ children, onClick }: any) =>
       React.createElement("button", { onClick }, children),
 
+    // label과 input을 htmlFor/id로 연결 — getByLabelText가 동작하려면 필수(암묵적 연결은
+    // 실제 TDS도 label/input을 형제로 렌더해 testing-library가 못 찾는다. 명시적 id로 보강).
     TextField: React.forwardRef(
-      ({ label, help, hasError, variant, ...props }: any, ref: any) =>
-        React.createElement(
+      ({ label, help, hasError, variant, id, ...props }: any, ref: any) => {
+        const inputId = id ?? (typeof label === "string" ? `tf-${label}` : undefined);
+        return React.createElement(
           "div",
           null,
-          React.createElement("label", null, label),
-          React.createElement("input", { ref, "data-variant": variant, ...props }),
+          React.createElement("label", { htmlFor: inputId }, label),
+          React.createElement("input", { ref, id: inputId, "data-variant": variant, ...props }),
           hasError && help && React.createElement("span", { role: "alert" }, help),
-        ),
+        );
+      },
     ),
 
     TextArea: React.forwardRef(
-      ({ label, help, hasError, ...props }: any, ref: any) =>
-        React.createElement(
+      ({ label, help, hasError, id, ...props }: any, ref: any) => {
+        const inputId = id ?? (typeof label === "string" ? `ta-${label}` : undefined);
+        return React.createElement(
           "div",
           null,
-          React.createElement("label", null, label),
-          React.createElement("textarea", { ref, ...props }),
+          React.createElement("label", { htmlFor: inputId }, label),
+          React.createElement("textarea", { ref, id: inputId, ...props }),
           hasError && help && React.createElement("span", { role: "alert" }, help),
-        ),
+        );
+      },
     ),
 
     Top: Object.assign(

@@ -7,6 +7,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Generate from './pages/Generate';
 import GenerateResult from './pages/GenerateResult';
+import Builder from './pages/Builder';
 import FlowDetail from './pages/FlowDetail';
 import RunDetail from './pages/RunDetail';
 import Runs from './pages/Runs';
@@ -28,6 +29,8 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/generate" element={<Generate />} />
       <Route path="/generate/result" element={<GenerateResult />} />
+      <Route path="/flows/new" element={<Builder />} />
+      <Route path="/flows/:flowId/edit" element={<Builder />} />
       <Route path="/flows/:flowId" element={<FlowDetail />} />
       <Route path="/runs/:runId" element={<RunDetail />} />
       <Route path="/runs" element={<Runs />} />

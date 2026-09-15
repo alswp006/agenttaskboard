@@ -4,6 +4,7 @@ import { Top, ListRow, Badge, Paragraph, Asset, Button, Spacing } from '@toss/td
 import { useAppState } from '@/hooks/AppStateContext';
 import { flowRepo } from '@/lib/repos/flowRepo';
 import { FlowLimitError } from '@/lib/errors';
+import { validateDraft } from '@/lib/validateDraft';
 import { format } from '@/lib/format';
 import type { RouteState } from '@/lib/types';
 import { ScreenScaffold } from '@/components/ScreenScaffold';
@@ -44,6 +45,10 @@ export default function GenerateResult() {
   const [triggerLine, aiStepLine, actionsLine] = format(draft).split(' · ');
 
   function handleSave() {
+    if (!validateDraft(draft).valid) {
+      setSaveError('빠진 정보가 있어요. "수정해서 저장"으로 채운 뒤 저장해주세요');
+      return;
+    }
     try {
       const flow = flowRepo.create({ draft, source: 'ai', templateId: null });
       navigate(`/flows/${flow.id}`);

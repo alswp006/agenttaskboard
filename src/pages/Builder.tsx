@@ -125,7 +125,6 @@ export default function Builder() {
     save(draft, {
       source: isEdit ? (originalFlow?.source ?? 'manual') : (routeState?.source ?? 'manual'),
       templateId: isEdit ? (originalFlow?.templateId ?? null) : (routeState?.templateId ?? null),
-      missingFields: routeState?.missingFields ?? [],
     });
   }
 

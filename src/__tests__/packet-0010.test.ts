@@ -171,19 +171,46 @@ describe("AI 생성 결과 /generate/result", () => {
   });
 
   it("'저장하기'를 탭하면 source 'ai'로 플로우를 저장하고 상세 화면으로 이동한다", () => {
+    const completeDraft: FlowDraft = {
+      ...DRAFT,
+      actions: [
+        {
+          type: "slack_webhook",
+          webhookUrl: "https://hooks.slack.com/services/T0000/B0000/XXXXXXXXXXXXXXXXXXXXXXXX",
+        },
+      ],
+    };
     useAppStateMock.mockReturnValue(
       makeAppState({
         isFree: false,
         plan: { tier: "pro", purchasedAt: "2026-01-01T00:00:00.000Z", expiresAt: null },
       }),
     );
+    setLocationState({ prompt: PROMPT, draft: completeDraft, missingFields: [] });
+
+    renderResult();
+    fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
+
+    expect(flowRepoCreateMock).toHaveBeenCalledWith({ draft: completeDraft, source: "ai", templateId: null });
+    expect(mockNavigate).toHaveBeenCalledWith("/flows/flow_test1234");
+  });
+
+  it("빠진 필드가 있는 초안은 '저장하기'를 탭해도 저장되지 않고 에러 문구가 보인다", () => {
+    useAppStateMock.mockReturnValue(
+      makeAppState({
+        isFree: false,
+        plan: { tier: "pro", purchasedAt: "2026-01-01T00:00:00.000Z", expiresAt: null },
+      }),
+    );
+    // DRAFT의 slack_webhook.webhookUrl은 빈 문자열 — validateDraft 기준으로 불완전한 초안이다.
     setLocationState({ prompt: PROMPT, draft: DRAFT, missingFields: MISSING_FIELDS });
 
     renderResult();
     fireEvent.click(screen.getByRole("button", { name: "저장하기" }));
 
-    expect(flowRepoCreateMock).toHaveBeenCalledWith({ draft: DRAFT, source: "ai", templateId: null });
-    expect(mockNavigate).toHaveBeenCalledWith("/flows/flow_test1234");
+    expect(flowRepoCreateMock).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByText(/빠진 정보가 있어요/)).toBeInTheDocument();
   });
 
   it("'수정해서 저장'을 탭하면 draft·missingFields를 실어 빌더(/flows/new)로 이동한다", () => {

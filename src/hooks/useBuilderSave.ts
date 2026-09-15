@@ -11,7 +11,6 @@ import { useAppToast } from '@/hooks/ToastProvider';
 interface SaveOptions {
   source: Flow['source'];
   templateId: string | null;
-  missingFields?: string[];
 }
 
 interface UseBuilderSaveArgs {
@@ -31,7 +30,9 @@ export function useBuilderSave({ flowId }: UseBuilderSaveArgs) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   async function save(draft: FlowDraft, options: SaveOptions) {
-    const result = validateDraft(draft, options.missingFields ?? []);
+    // missingFields는 여기서 넘기지 않는다 — AI 초안의 빈 필수 필드(F3 AC-6)는
+    // 다른 검증 에러와 동일하게 표시·차단돼야 저장 시 완성된 플로우가 보장된다.
+    const result = validateDraft(draft);
     if (!result.valid) {
       setErrors(result.errors);
       return;

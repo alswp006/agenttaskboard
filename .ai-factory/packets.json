@@ -1,0 +1,671 @@
+[
+  {
+    "id": "0001",
+    "title": "도메인 타입 + RouteState 계약",
+    "epic": "Epic 1. Data Layer",
+    "task": {
+      "description": "SPEC Data Models의 코드 블록을 그대로 옮긴다. flow.ts: Weekday, HHmm, Trigger, InputSource, AiTask, AiStep, Action, FlowDraft, RunStatus, Flow. run.ts: RunErrorCode, StepResult, RunLog. plan.ts: PlanTier, PlanState, UsageState, RUN_LIMIT. template.ts: FlowTemplate. navigation/types.ts: LocationState 5종과 RouteState 맵. RUN_LIMIT 외 런타임 코드는 없다.",
+      "acceptance_criteria": [
+        "타입 이름과 필드가 SPEC 코드 블록과 똑같다",
+        "RouteState['/generate/result']가 { prompt: string; draft: FlowDraft; missingFields: string[] } | null이다",
+        "런타임 export는 plan.ts의 RUN_LIMIT 1개뿐이다"
+      ]
+    },
+    "covers": [
+      "F1-AC-1"
+    ],
+    "files": [
+      "src/types/flow.ts",
+      "src/types/run.ts",
+      "src/types/plan.ts",
+      "src/types/template.ts",
+      "src/navigation/types.ts"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit 에러 0건",
+      "navigation/types.ts의 런타임 export 0개"
+    ],
+    "depends_on": [],
+    "db_schema": "interface Flow extends FlowDraft { id: 'flow_'+base36 8자; source: 'manual'|'ai'|'template'; templateId; enabled; nextRunAt; lastRunAt; lastRunStatus; createdAt; updatedAt } / interface RunLog { id: 'run_'+base36 12자; flowId; flowName; trigger; status; startedAt; finishedAt; durationMs; aiOutput; steps: StepResult[] }",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0002",
+    "title": "안전 저장소 코어 + KST/ID 유틸 + 테스트 환경",
+    "epic": "Epic 1. Data Layer",
+    "task": {
+      "description": "errors.ts에 CP-2의 에러 코드와 정확한 메시지 문자열, FlowLimitError를 정의한다. safeStorage.ts: JSON 파싱이 실패하면 DATA_CORRUPTED로 기본값을 돌려주고, QuotaExceededError는 STORAGE_FULL로 바꾼다. time.ts: KST 기준 월·일·최근 7일 경계, flow_/run_ ID 생성, crypto.randomUUID가 없을 때 쓸 UUID v4 폴백. vite.config.ts의 build.target과 vitest jsdom 설정, 테스트 setup 파일도 만든다.",
+      "acceptance_criteria": [
+        "손상된 JSON이 저장된 키를 읽으면 throw 없이 { value: 기본값, corrupted: true }를 반환한다",
+        "2026-09-30T15:00:00Z는 KST 기준 '2026-10' 월로 계산된다",
+        "vite.config.ts의 build.target이 정확히 [\"es2017\",\"safari16\"]이다"
+      ]
+    },
+    "covers": [
+      "F1-AC-2",
+      "F1-AC-3",
+      "G-AC-4"
+    ],
+    "files": [
+      "src/lib/errors.ts",
+      "src/lib/safeStorage.ts",
+      "src/lib/time.ts",
+      "vite.config.ts",
+      "src/test/setup.ts"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit 통과",
+      "npx vite build 성공",
+      "src/lib에서 structuredClone, .at(, Object.hasOwn, replaceAll 사용 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "STORAGE_FULL: '저장 공간이 부족해요. 오래된 실행 로그를 삭제해주세요' / DATA_CORRUPTED: '저장된 데이터를 불러오지 못했어요'",
+    "api_contract": "",
+    "dependencies": [
+      "vitest",
+      "jsdom",
+      "@testing-library/react",
+      "@testing-library/jest-dom"
+    ],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0003",
+    "title": "엔티티 저장소 (flow·run·usage·plan·client)",
+    "epic": "Epic 1. Data Layer",
+    "task": {
+      "description": "safeStorage를 쓰는 엔티티 CRUD를 만든다. flowRepo: 목록·조회·생성·수정·삭제, 50개가 넘으면 FlowLimitError. runRepo: 200개 상한(오래된 것부터 삭제), 용량이 차면 오래된 로그를 지우고 재시도, 동기화 메타(lastSyncedAt). usageRepo: KST 월이 바뀌면 runCount를 0으로 되돌린다. planRepo: 이용권과 만료일. clientRepo: atb:clientId(UUID)와 atb:aiNoticeAck.",
+      "acceptance_criteria": [
+        "플로우가 50개일 때 create를 호출하면 FlowLimitError가 나고 저장된 개수는 50 그대로다",
+        "runRepo에 201번째 로그를 추가하면 startedAt이 가장 오래된 1건이 삭제되어 200건이 된다",
+        "usage.month가 지난 KST 월이면 읽을 때 runCount가 0이 된다"
+      ]
+    },
+    "covers": [
+      "F1-AC-4",
+      "F1-AC-5",
+      "F2-AC-5"
+    ],
+    "files": [
+      "src/lib/repos/flowRepo.ts",
+      "src/lib/repos/runRepo.ts",
+      "src/lib/repos/usageRepo.ts",
+      "src/lib/repos/planRepo.ts",
+      "src/lib/repos/clientRepo.ts"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit 통과",
+      "새로고침한 뒤에도 생성한 플로우가 localStorage에서 다시 로드됨"
+    ],
+    "depends_on": [
+      "0002"
+    ],
+    "db_schema": "localStorage keys: 'atb:flows'(Flow[] ≤50), 'atb:runs'(RunLog[] ≤200), 'atb:usage'(UsageState), 'atb:plan'(PlanState), 'atb:clientId'(UUID), 'atb:aiNoticeAck'({ackedAt}), 'atb:syncMeta'({lastSyncedAt}) — 정확한 키는 SPEC 'localStorage 키와 용량 추정' 표를 따른다",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0004",
+    "title": "검증기 · 포매터 · 지표 · 번들 템플릿 6개",
+    "epic": "Epic 1. Data Layer",
+    "task": {
+      "description": "validateDraft.ts: name은 trim 후 1~30자, HHmm 30분 단위, weekly days 1~7개 중복 없음, 입력 소스별 정규식, classify·custom은 instruction 필수, translate는 targetLanguage 필수, actions 1~3개와 URL 정규식을 검사한다. format.ts: '매주 월·수 18:00 · 요약 · 슬랙 전송 외 1개' 형태의 요약 문자열과 requiredFieldNotice. metrics.ts: KST 최근 7일 성공률. templates.ts: 검증을 통과하는 번들 템플릿 6개.",
+      "acceptance_criteria": [
+        "webhookUrl이 'https://example.com'이면 validateDraft가 해당 필드 에러를 반환한다",
+        "weekly [mon,wed] 18:00 + summarize + 액션 2개의 요약이 '매주 월·수 18:00 · 요약 · 슬랙 전송 외 1개'다",
+        "번들 템플릿 6개가 missingFieldHint로 지정한 필드를 뺀 나머지 검증을 모두 통과한다"
+      ]
+    },
+    "covers": [
+      "F3-AC-5",
+      "F7-AC-1"
+    ],
+    "files": [
+      "src/lib/validateDraft.ts",
+      "src/lib/format.ts",
+      "src/lib/metrics.ts",
+      "src/data/templates.ts",
+      "src/lib/validateDraft.test.ts"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/lib/validateDraft.test.ts 통과",
+      "templates.ts에서 '설치하세요|다운로드|앱 설치|스토어에서' 매치 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0005",
+    "title": "API 계약 타입 + 클라이언트 + 엔드포인트",
+    "epic": "Epic 2. API Client & State",
+    "task": {
+      "description": "contracts.ts에 SPEC API Contract의 요청·응답 타입을 둔다. client.ts: VITE_API_BASE_URL 기준 fetch 래퍼, 모든 요청에 X-Client-Id 헤더, 타임아웃, 네트워크 실패는 NETWORK_ERROR, 429는 RATE_LIMITED, 402/한도는 QUOTA_EXCEEDED, 응답 형태가 틀리면 INVALID_RESPONSE로 매핑한다. endpoints.ts에 5개 함수. lib/types.ts는 re-export만 한다.",
+      "acceptance_criteria": [
+        "fetch가 TypeError를 던지면 code 'NETWORK_ERROR', 메시지 '네트워크 연결을 확인해주세요'로 reject된다",
+        "429 응답이면 '잠시 후 다시 시도해주세요' 메시지로 reject된다",
+        "모든 요청 헤더에 X-Client-Id가 atb:clientId 값으로 들어 있다"
+      ]
+    },
+    "covers": [
+      "G-AC-3"
+    ],
+    "files": [
+      "src/api/contracts.ts",
+      "src/api/client.ts",
+      "src/api/endpoints.ts",
+      "src/lib/types.ts",
+      "src/api/client.test.ts"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/api/client.test.ts 통과(fetch mock 6케이스)",
+      "하드코딩된 API 주소 0건(VITE_API_BASE_URL만 사용)"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "POST /api/flows/generate {prompt} → GenerateResponse | POST /api/runs {RunRequest} → RunResponse | GET /api/runs?since&limit=100 → ListRunsResponse | PUT /api/schedules/:flowId {PutScheduleRequest} → {nextRunAt} | DELETE /api/schedules/:flowId → DeleteScheduleResponse | errors: 400,409,429,500,NETWORK,TIMEOUT",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0006",
+    "title": "실행 · 스케줄 · 동기화 서비스",
+    "epic": "Epic 2. API Client & State",
+    "task": {
+      "description": "runService: 한도를 먼저 확인하고 POST /api/runs 호출, 결과를 runRepo에 저장, usage 증가, Flow의 lastRun*을 갱신한다. scheduleService: manual 트리거면 PUT 대신 DELETE, 한도를 넘었으면 API 호출 없이 QUOTA_EXCEEDED, 끄기 실패 시 enabled를 유지한다. syncService: since 커서로 동기화하고, 100건이 꽉 차면 마지막 startedAt을 커서로 저장한다. 중복 runId는 세지 않고, lastRun*을 갱신한다.",
+      "acceptance_criteria": [
+        "사용량이 RUN_LIMIT와 같으면 runNow는 fetch 0회로 QUOTA_EXCEEDED를 반환한다",
+        "DELETE가 500을 받으면 flow.enabled가 true로 유지되고 에러를 반환한다",
+        "동기화 응답이 100건이면 lastSyncedAt이 100번째 항목의 startedAt으로 저장된다"
+      ]
+    },
+    "covers": [
+      "F5-AC-3",
+      "F5-AC-4",
+      "F6-AC-7"
+    ],
+    "files": [
+      "src/services/runService.ts",
+      "src/services/scheduleService.ts",
+      "src/services/syncService.ts",
+      "src/services/services.test.ts"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/services/services.test.ts 통과",
+      "같은 runId를 두 번 동기화해도 runCount가 1만 늘어남"
+    ],
+    "depends_on": [
+      "0003",
+      "0005"
+    ],
+    "db_schema": "",
+    "api_contract": "POST /api/runs, PUT/DELETE /api/schedules/:flowId, GET /api/runs (0005 endpoints.ts 사용)",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0007",
+    "title": "앱 상태 Context · 전역 Toast · AI 고지 · 키보드 훅",
+    "epic": "Epic 2. API Client & State",
+    "task": {
+      "description": "AppStateContext: flows·runs·usage·plan을 상태로 들고 refresh를 제공하고, 이용권 만료를 감지한다. ToastProvider: useAppToast().showToast로 띄우며, navigate한 뒤에도 Toast가 유지된다. AiNoticeDialog: atb:aiNoticeAck가 없을 때 TDS AlertDialog를 띄우고 확인 전에는 onAck를 호출하지 않는다. useKeyboardAware: 포커스되면 scrollIntoView center, visualViewport 기준 오프셋. PlanAdSlot: free 플랜일 때만 AdSlot을 렌더링한다.",
+      "acceptance_criteria": [
+        "atb:aiNoticeAck가 없으면 제목 '이 서비스는 생성형 AI를 활용합니다' 다이얼로그가 보이고, '확인'을 탭하면 { ackedAt: ISO }가 저장된다",
+        "plan.tier가 'pro'면 PlanAdSlot이 null을 렌더링한다",
+        "TextField에 포커스하면 300ms 안에 scrollIntoView({block:'center'})가 호출된다"
+      ]
+    },
+    "covers": [
+      "G-AC-8",
+      "G-AC-10"
+    ],
+    "files": [
+      "src/hooks/AppStateContext.tsx",
+      "src/hooks/ToastProvider.tsx",
+      "src/components/AiNoticeDialog.tsx",
+      "src/hooks/useKeyboardAware.ts",
+      "src/components/PlanAdSlot.tsx"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit 통과",
+      "컴포넌트 안에서 TDS Toast 직접 렌더 0건(Provider만 렌더)"
+    ],
+    "depends_on": [],
+    "db_schema": "atb:aiNoticeAck = { ackedAt: string }",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "AlertDialog title='이 서비스는 생성형 AI를 활용합니다' description='AI가 만든 플로우와 실행 결과는 부정확할 수 있어요. 내용을 확인한 뒤 사용해주세요' alertButton=<AlertDialog.AlertButton onClick={ack}>확인</AlertDialog.AlertButton> onClose={ack}. 확인 시 generateHapticFeedback success. PlanAdSlot = plan.tier==='free' && <AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID} />. Toast position은 prop으로 받는다(SubmitFooter 화면 top, 탭 루트 bottom)."
+  },
+  {
+    "id": "0008",
+    "title": "홈 — 플로우 목록 /",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "핵심 여정의 진입 화면이다. 실패 알림 행, 사용량 요약 행, 'AI로 만들기'·'직접 만들기' 버튼, updatedAt 내림차순 플로우 목록과 Badge, 빈 상태, 무료 플랜 배너를 둔다. 플로우가 50개면 Toast를 띄우고 navigate하지 않는다. 데이터가 손상됐으면 Toast를 1회만 띄운다(ref로 중복 방지). navigate state는 RouteState 타입을 쓴다.",
+      "acceptance_criteria": [
+        "플로우가 0개면 data-testid='flow-empty'에 '아직 만든 플로우가 없어요'가 보인다",
+        "플로우가 50개일 때 '직접 만들기'를 탭하면 '플로우는 최대 50개까지 만들 수 있어요' Toast가 뜨고 navigate는 0회다",
+        "실패 알림 행을 탭하면 navigate('/runs', { state: { filter: 'failed' } })가 호출된다"
+      ]
+    },
+    "covers": [
+      "F2-AC-1",
+      "F2-AC-2",
+      "F2-AC-3",
+      "F2-AC-4"
+    ],
+    "files": [
+      "src/pages/Home.tsx",
+      "src/pages/Home.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/Home.test.tsx 통과",
+      "행 높이 56px 이상, 버튼 display='block'"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern PageShell. <ScreenScaffold><Top title={<Top.TitleParagraph>내 플로우</Top.TitleParagraph>} />; unreadFailed>0 → <ListRow data-testid='home-failure-alert' contents={<ListRow.Texts type='1RowTypeA' top={`실패한 실행 ${n}건이 있어요`}/>} right={<Badge>실패</Badge>}/>; <ListRow data-testid='usage-summary' onClick→/plan contents 2RowTypeA top={isPro?`이번 달 실행 ${n}회 · 무제한`:`이번 달 실행 ${n}/${limit}회`} bottom={!isPro&&<MiniBar value={n/limit}/>}/>; <Spacing size={16}/>; grid 1fr 1fr gap 8: <Button variant='fill' size='large' display='block'>AI로 만들기</Button><Button variant='weak' ...>직접 만들기</Button>; <Spacing size={24}/>; 빈 상태: <div data-testid='flow-empty'><Asset.ContentIcon/><EmptyState title='아직 만든 플로우가 없어요' action={<Button variant='weak'>템플릿 둘러보기</Button>}/></div>; 목록: <div data-testid='flow-list'> ListRow 2RowTypeA top=name bottom=요약 문자열, right=<Badge>성공|실패|실행 전</Badge>; PlanAdSlot은 목록 뒤; 하단 <Spacing size={32}/>×2. Loading 없음. Error: corrupted → Toast bottom '저장된 데이터를 불러오지 못했어요' 1회. 햅틱: CTA success, 50개 상한이면 tickStrong."
+  },
+  {
+    "id": "0009",
+    "title": "AI 생성 입력 /generate",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "자연어 프롬프트 TextArea와 SubmitFooter '만들기' 버튼을 둔다. 진입할 때 AiNoticeDialog 확인 전에는 API를 호출하지 않는다. 제출하면 POST /api/flows/generate를 호출하고 버튼이 loading 상태가 된다. 에러는 CP-2 메시지로 Toast를 띄운다. 성공하면 RouteState['/generate/result'] 타입 state로 /generate/result에 이동한다. state 없이 들어와도 크래시하지 않는다.",
+      "acceptance_criteria": [
+        "프롬프트가 공백뿐이면 '만들기' 버튼이 disabled이고 fetch는 0회다",
+        "atb:aiNoticeAck가 없으면 다이얼로그가 보이고, 확인 전에는 fetch가 0회다",
+        "네트워크 실패 시 '네트워크 연결을 확인해주세요' Toast가 뜨고 입력값이 유지된다"
+      ]
+    },
+    "covers": [
+      "F4-AC-1",
+      "F4-AC-2",
+      "F4-AC-3",
+      "F4-AC-4",
+      "G-AC-8"
+    ],
+    "files": [
+      "src/pages/Generate.tsx",
+      "src/hooks/useGenerateSubmit.ts",
+      "src/pages/Generate.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/Generate.test.tsx 통과",
+      "location.state가 undefined여도 렌더 에러 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "POST /api/flows/generate {prompt} → {draft: FlowDraft, missingFields: string[]} | 400, 429 RATE_LIMITED, NETWORK_ERROR, TIMEOUT",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title='AI로 플로우 만들기'/> <Paragraph.Text>안내 문구</Paragraph.Text> <Spacing size={16}/> <TextArea placeholder='예: 매주 월요일 9시에 뉴스를 요약해서 슬랙으로 보내줘' onFocus=useKeyboardAware/> 에러 텍스트는 Paragraph.Text + color var(--tds-color-red500). <SubmitFooter><Button display='block' loading={submitting} disabled={!valid}>만들기</Button></SubmitFooter> <AiNoticeDialog/>. Toast position top. Loading: Button loading. Error: 메시지 + 재시도 가능. 햅틱: 만들기 success."
+  },
+  {
+    "id": "0010",
+    "title": "AI 생성 결과 /generate/result",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "state.draft를 3단계(트리거·AI 처리·액션) Card로 미리 보여준다. 상단에 ai-generated-badge를 두고, missingFields가 있으면 안내한다. 무료 플랜이면 미리보기를 TossRewardAd로 감싼다. '저장하기'는 source 'ai'로 저장한 뒤 상세로 이동하고, '수정해서 저장'은 빌더로 state를 넘긴다. state가 없으면 찾을 수 없음 빈 상태와 /generate로 돌아가는 버튼을 보여준다.",
+      "acceptance_criteria": [
+        "결과 Card 상단에 data-testid='ai-generated-badge' 텍스트 'AI가 생성한 결과입니다'가 보인다",
+        "state 없이 들어오면 크래시 없이 빈 상태와 '다시 만들기' 버튼이 보인다",
+        "plan.tier가 free면 미리보기가 TossRewardAd 안에 렌더링되고, pro면 광고 없이 바로 보인다"
+      ]
+    },
+    "covers": [
+      "F4-AC-5",
+      "F4-AC-6",
+      "F4-AC-7",
+      "F4-AC-8",
+      "G-AC-9"
+    ],
+    "files": [
+      "src/pages/GenerateResult.tsx",
+      "src/pages/GenerateResult.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/GenerateResult.test.tsx 통과",
+      "webhookUrl은 <a> 없이 Paragraph.Text 평문"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title='이렇게 만들었어요'/> {free ? <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}>{preview}</TossRewardAd> : preview}; preview = <Card><Badge data-testid='ai-generated-badge'>AI가 생성한 결과입니다</Badge> ListRow×3(트리거/AI 처리/액션, ListRow.Texts 2RowTypeA)</Card>; missingFields.length>0 → Paragraph.Text 안내(requiredFieldNotice). <SubmitFooter> 저장하기(display block) + weak '수정해서 저장' → navigate('/flows/new', {state: BuilderLocationState}). Empty: Asset.ContentIcon + EmptyState title='생성 결과가 없어요' action=<Button variant='weak'>다시 만들기</Button>. Toast top. 햅틱 success."
+  },
+  {
+    "id": "0011",
+    "title": "빌더 섹션 — reducer · 트리거/입력 · AI · 액션 BottomSheet",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "빌더 페이지에서 쓰는 섹션 컴포넌트를 만든다(페이지 파일 아님). draftReducer: FlowDraft 편집 액션. TriggerInputSheet: 수동·매일·매주 Chip, 30분 단위 시간, 입력 소스 3종. AiStepSheet: task Chip, instruction, targetLanguage. ActionListSheet: 액션 1~3개와 위/아래 순서 버튼(44px), 카카오톡·네이버 캘린더는 '준비 중' 비활성 행으로만 표시한다.",
+      "acceptance_criteria": [
+        "액션이 3개면 '액션 추가' 버튼이 disabled다",
+        "두 번째 액션의 '위로'를 탭하면 actions 배열 0·1번 순서가 바뀐다",
+        "task가 translate인데 targetLanguage가 null이면 시트의 '완료' 버튼이 disabled다"
+      ]
+    },
+    "covers": [
+      "F3-AC-1",
+      "F3-AC-2",
+      "F3-AC-3"
+    ],
+    "files": [
+      "src/components/builder/draftReducer.ts",
+      "src/components/builder/TriggerInputSheet.tsx",
+      "src/components/builder/AiStepSheet.tsx",
+      "src/components/builder/ActionListSheet.tsx",
+      "src/components/builder/builder.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/components/builder/builder.test.tsx 통과",
+      "'고급 연동'·'커뮤니티' 문구 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS BottomSheet(prop은 .d.ts 확인), Chip(탭 시 tickWeak), TextField(enterKeyHint='done', Enter 시 blur), TextArea, ListRow, Button display='block', Spacing. 순서 버튼 min 44×44px. 에러 텍스트 Paragraph.Text + var(--tds-color-red500). 준비 중 액션: ListRow + Badge '준비 중', onClick 없음. HEX 색상 금지."
+  },
+  {
+    "id": "0012",
+    "title": "빌더 페이지 /flows/new, /flows/:flowId/edit",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "3단계 고정 Card(트리거→AI 처리→액션)를 두고, 탭하면 0011 BottomSheet를 연다. useBuilderSave: validateDraft → 생성/수정 → enabled면 스케줄 재등록(manual이면 DELETE). FlowLimitError면 Toast. 저장이 끝나면 refresh → Toast → navigate 순서다. BuilderLocationState(템플릿/AI 초안)를 받고, state가 없으면 빈 초안으로 시작한다. 변경사항이 있을 때 나가면 이탈 확인 다이얼로그.",
+      "acceptance_criteria": [
+        "이름이 빈 채로 저장하면 이름 TextField가 error 상태가 되고 저장 0회다",
+        "플로우가 50개일 때 /flows/new에서 저장하면 '플로우는 최대 50개까지 만들 수 있어요' Toast가 뜨고 개수는 50이다",
+        "state 없이 /flows/new에 들어오면 크래시 없이 빈 초안이 표시된다"
+      ]
+    },
+    "covers": [
+      "F3-AC-4",
+      "F3-AC-5",
+      "F3-AC-6"
+    ],
+    "files": [
+      "src/pages/Builder.tsx",
+      "src/hooks/useBuilderSave.ts",
+      "src/pages/Builder.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/Builder.test.tsx 통과",
+      "SubmitFooter 위에 AdSlot 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "PUT /api/schedules/:flowId (enabled && trigger!=manual) | DELETE /api/schedules/:flowId (trigger==manual)",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title={isEdit?'플로우 수정':'새 플로우'}/> <TextField label='이름' maxLength 30 enterKeyHint='done'/> <Spacing size={16}/> Card×3(1 트리거·입력 / 2 AI 처리 / 3 액션) 각 ListRow 2RowTypeA + 요약 문자열, 탭 시 BottomSheet. <SubmitFooter><Button display='block' loading={saving}>저장하기</Button></SubmitFooter>. 이탈 확인: 2버튼 다이얼로그(.d.ts에서 ConfirmDialog 확인), 왼쪽 '닫기', 오른쪽 '나가기'(tickStrong). useKeyboardAware 적용. Toast top. 저장 success 햅틱."
+  },
+  {
+    "id": "0013",
+    "title": "플로우 상세 /flows/:flowId",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "플로우 정보 Card(트리거·AI·액션, URL은 평문), source ai면 'AI 생성' Badge, 예약 실행 Switch(scheduleService, 한도 초과·실패 시 원래 값 유지), 수정 버튼, 삭제 확인 다이얼로그, SubmitFooter '지금 실행'을 둔다. 실행은 AI 고지 확인 후 runService → refresh → Toast → /runs/:runId 순서다. 없는 flowId면 찾을 수 없음 상태를 보여준다.",
+      "acceptance_criteria": [
+        "slack_webhook URL이 <a> 태그 없이 Paragraph.Text로 표시된다",
+        "한도를 넘은 상태에서 Switch를 켜면 fetch 0회, '이번 달 실행 횟수를 모두 사용했어요' Toast, Switch는 off다",
+        "삭제 다이얼로그에서 '삭제'를 탭하면 flowRepo에서 제거되고 '/'로 이동한다"
+      ]
+    },
+    "covers": [
+      "F5-AC-1",
+      "F5-AC-2",
+      "F5-AC-3",
+      "F5-AC-4",
+      "F5-AC-5",
+      "F5-AC-6",
+      "G-AC-1"
+    ],
+    "files": [
+      "src/pages/FlowDetail.tsx",
+      "src/pages/FlowDetail.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/FlowDetail.test.tsx 통과",
+      "없는 flowId에서 크래시 없이 EmptyState 표시"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "POST /api/runs; PUT/DELETE /api/schedules/:flowId",
+    "dependencies": [],
+    "ui_requirements": "Pattern Top+우측액션. <ScreenScaffold><Top title={name} right={<Button variant='weak' size='small'>수정</Button>}/> {source==='ai'&&<Badge>AI 생성</Badge>} <Card> ListRow×3 요약 + URL Paragraph.Text 평문</Card> <ListRow contents='예약 실행' bottom=nextRunAt KST right={<Switch checked={enabled} disabled={trigger.type==='manual'}/>}/>(tickWeak) <ListRow contents='플로우 삭제'/>(tickStrong) → 2버튼 다이얼로그 '닫기'/'삭제'. PlanAdSlot은 콘텐츠 뒤. <SubmitFooter><Button display='block' loading={running}>지금 실행</Button></SubmitFooter> <AiNoticeDialog/>. Empty: Asset.ContentIcon + EmptyState '플로우를 찾을 수 없어요' action weak '홈으로'. Toast top."
+  },
+  {
+    "id": "0014",
+    "title": "실행 상세 /runs/:runId",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "실행 결과를 보여준다. 상태·시작 시각(KST)·소요 시간, 단계별 StepResult 목록(성공/실패/건너뜀 Badge, message), aiOutput Card와 상단 ai-generated-badge. 실패 단계의 message를 표시하고, 외부 URL은 평문으로만 둔다. runId가 없으면 '실행 기록을 찾을 수 없어요' 빈 상태와 '/runs'로 돌아가는 버튼을 보여준다.",
+      "acceptance_criteria": [
+        "aiOutput이 있으면 Card 상단에 ai-generated-badge 'AI가 생성한 결과입니다'가 보인다",
+        "steps 3개가 순서대로 ListRow 3개로 렌더링되고, failed 단계에 '실패' Badge가 있다",
+        "없는 runId로 들어오면 크래시 없이 빈 상태가 보인다"
+      ]
+    },
+    "covers": [
+      "F6-AC-5",
+      "F6-AC-6",
+      "G-AC-9",
+      "G-AC-1"
+    ],
+    "files": [
+      "src/pages/RunDetail.tsx",
+      "src/pages/RunDetail.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/RunDetail.test.tsx 통과",
+      "src/pages/RunDetail.tsx에 <a href 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title={flowName}/> <ListRow.Texts 2RowTypeA top='성공|실패' bottom='시작 시각 · 소요 N초'/> <Spacing size={16}/> 단계 ListRow(stage label, bottom=message, right=<Badge>성공|실패|건너뜀</Badge>) <Spacing size={16}/> {aiOutput && <Card><Badge data-testid='ai-generated-badge'>AI가 생성한 결과입니다</Badge><Paragraph.Text>{aiOutput}</Paragraph.Text></Card>} PlanAdSlot 결과 뒤. Empty: Asset.ContentIcon + EmptyState '실행 기록을 찾을 수 없어요' action weak '실행 로그로'."
+  },
+  {
+    "id": "0015",
+    "title": "실행 로그 대시보드 /runs",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "지표 Card(최근 7일 실행 수·성공률, SummaryHero/CountUp), 실패가 있으면 error-alert-card, 전체/성공/실패 필터 Tab(RunsLocationState.filter를 초기값으로), 20개씩 목록과 '더 보기', 진입 시 syncService 동기화(로딩 Skeleton·에러 재시도), 이용권 만료로 한도가 걸리면 예약 중지 안내 다이얼로그를 둔다.",
+      "acceptance_criteria": [
+        "state { filter: 'failed' }로 들어오면 '실패' Tab이 선택되고 failed 로그만 보인다",
+        "로그가 45개면 처음 20개가 보이고, '더 보기'를 두 번 탭하면 45개가 된다",
+        "최근 7일에 실패가 1건 이상이면 data-testid='error-alert-card'가 보인다"
+      ]
+    },
+    "covers": [
+      "F6-AC-1",
+      "F6-AC-2",
+      "F6-AC-3",
+      "F6-AC-4",
+      "F6-AC-7"
+    ],
+    "files": [
+      "src/pages/Runs.tsx",
+      "src/hooks/useRunSync.ts",
+      "src/pages/Runs.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/Runs.test.tsx 통과",
+      "동기화가 NETWORK_ERROR면 에러 메시지와 '다시 시도' 버튼 표시"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "GET /api/runs?since=<ISO>&limit=100 → {runs: RunLog[]}",
+    "dependencies": [],
+    "ui_requirements": "탭 루트. <ScreenScaffold><Top title='실행 로그'/> <Card><SummaryHero/> CountUp 실행 수, 성공률 %, Sparkline 7일</Card> {failed>0&&<div data-testid='error-alert-card'><Card>실패한 실행 N건이 있어요</Card></div>} <Tab>전체/성공/실패</Tab>(tickWeak) ListRow 2RowTypeA top=flowName bottom=KST 시각·소요, right Badge → /runs/:id; <Button variant='weak' display='block'>더 보기</Button>; PlanAdSlot 목록 뒤; 하단 Spacing 32×2. Loading: Skeleton. Empty: Asset.ContentIcon + EmptyState '아직 실행 기록이 없어요' action weak '홈으로'. Error: Paragraph.Text 메시지 + '다시 시도' Button. Toast bottom."
+  },
+  {
+    "id": "0016",
+    "title": "[부가] 템플릿 목록 /templates",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "[부가] 번들 템플릿 6개를 목록으로 보여준다. 카테고리 Chip 필터, ListRow(이름·요약·필요한 설정 Badge), 탭하면 /templates/:templateId로 이동한다. 커뮤니티 업로드·공유 UI는 만들지 않는다. 무료 플랜이면 목록 뒤에 배너를 둔다. 스크롤은 일반 스크롤이다.",
+      "acceptance_criteria": [
+        "필터 없이 ListRow 6개가 렌더링된다",
+        "템플릿 행을 탭하면 navigate('/templates/<id>')가 호출된다",
+        "화면에 '커뮤니티'·'공유하기'·'업로드' 문구가 0건이다"
+      ]
+    },
+    "covers": [
+      "F7-AC-1",
+      "F7-AC-2"
+    ],
+    "files": [
+      "src/pages/Templates.tsx",
+      "src/pages/Templates.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/Templates.test.tsx 통과",
+      "plan pro에서 AdSlot 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "탭 루트. <ScreenScaffold><Top title='템플릿'/> <Paragraph.Text>검증된 자동화 레시피를 가져와요</Paragraph.Text> Chip 가로 flex(tickWeak) <Spacing size={16}/> ListRow 2RowTypeA top=name bottom=요약, left Asset.ContentIcon, 행 높이 56px+ ; PlanAdSlot 목록 뒤; Spacing 32×2. Toast bottom."
+  },
+  {
+    "id": "0017",
+    "title": "[부가] 템플릿 상세 /templates/:templateId",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "[부가] 템플릿의 3단계 구성과 설명, 가져온 뒤 채워야 할 필드 안내(requiredFieldNotice)를 보여준다. SubmitFooter '이 템플릿 사용하기'는 50개 상한을 확인한 뒤 BuilderLocationState { draft, templateId }로 /flows/new로 이동한다. 없는 templateId면 찾을 수 없음 상태를 보여준다.",
+      "acceptance_criteria": [
+        "input.text가 비어 있는 템플릿이면 '가져온 뒤 …' 안내 Paragraph.Text가 보인다",
+        "'이 템플릿 사용하기'를 탭하면 state에 templateId가 담겨 /flows/new로 navigate된다",
+        "없는 templateId면 크래시 없이 '템플릿을 찾을 수 없어요' 빈 상태가 보인다"
+      ]
+    },
+    "covers": [
+      "F7-AC-3",
+      "F7-AC-4"
+    ],
+    "files": [
+      "src/pages/TemplateDetail.tsx",
+      "src/pages/TemplateDetail.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/TemplateDetail.test.tsx 통과",
+      "URL 필드가 평문 표시"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "<ScreenScaffold><Top title={template.name}/> <Paragraph.Text>{description}</Paragraph.Text> <Card> ListRow×3(트리거·입력/AI 처리/액션)</Card> {notice && <Paragraph.Text>{notice}</Paragraph.Text>} <SubmitFooter><Button display='block'>이 템플릿 사용하기</Button></SubmitFooter>(success 햅틱, 50개면 tickStrong + Toast top). Empty: Asset.ContentIcon + EmptyState action weak '템플릿 목록으로'."
+  },
+  {
+    "id": "0018",
+    "title": "[부가] 요금제 /plan",
+    "epic": "Epic 3. Core UI Pages",
+    "task": {
+      "description": "[부가] 현재 플랜과 이번 달 사용량(MiniBar), 무료·스타터·프로 비교 ListRow, 30일 이용권 구매 버튼 2개(TossPurchase, SKU는 env)를 둔다. 구매에 성공하면 planRepo에 만료일을 저장하고 refresh 후 Toast를 띄운다. PlanLocationState(한도 초과로 진입)면 안내 문구를 보여준다. 프로 '고급 연동' 문구는 쓰지 않는다.",
+      "acceptance_criteria": [
+        "스타터 구매 onPurchased가 호출되면 plan.tier가 'starter', expiresAt이 now+30일로 저장된다",
+        "state { reason: 'quota' }로 들어오면 '이번 달 실행 횟수를 모두 사용했어요' 문구가 보인다",
+        "화면에 '고급 연동' 문구가 0건이다"
+      ]
+    },
+    "covers": [
+      "F8-AC-1",
+      "F8-AC-2",
+      "F8-AC-3",
+      "F8-AC-7"
+    ],
+    "files": [
+      "src/pages/Plan.tsx",
+      "src/pages/Plan.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/pages/Plan.test.tsx 통과(TossPurchase vi.mock)",
+      "SKU 하드코딩 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "PlanState { tier: PlanTier; expiresAt: string|null } → 'atb:plan'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "탭 루트. <ScreenScaffold><Top title='요금제'/> <ListRow 2RowTypeA top=`현재 ${tierLabel}` bottom={<MiniBar value={n/limit}/>}/> <Spacing size={16}/> ListRow×3 플랜 비교(월 실행 한도 RUN_LIMIT) <Spacing size={24}/> <TossPurchase sku={import.meta.env.VITE_TOSS_IAP_SKU} processProductGrant={...} onPurchased={...}/> 스타터 30일 이용권, <TossPurchase sku={import.meta.env.VITE_TOSS_IAP_SKU_PRO} .../> 프로 30일 이용권. PlanAdSlot 비교 뒤(free만). Spacing 32×2. Toast bottom."
+  },
+  {
+    "id": "0019",
+    "title": "라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유)",
+    "epic": "4",
+    "task": {
+      "description": "src/App.tsx가 유일한 진입점 소유 패킷이다. AppStateProvider·ToastProvider로 감싸고 모든 Route를 정의한다: /, /flows/new, /flows/:flowId, /flows/:flowId/edit, /generate, /generate/result, /runs, /runs/:runId, /templates, /templates/:templateId, /plan. FloatingTabBar는 4개 경로에서만 보인다. 이용권 만료 Toast는 1회만 띄운다. main.tsx는 수정하지 않는다.",
+      "acceptance_criteria": [
+        "/, /templates, /runs, /plan에서 FloatingTabBar가 보이고, /flows/new에서는 보이지 않는다",
+        "11개 경로 모두 렌더링할 때 console.error가 0회다",
+        "plan.expiresAt이 과거면 '이용권이 만료되어 무료 플랜으로 바뀌었어요' Toast가 1회 뜬다"
+      ]
+    },
+    "covers": [
+      "G-AC-2",
+      "F8-AC-5",
+      "F8-AC-6"
+    ],
+    "files": [
+      "src/App.tsx",
+      "src/App.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx tsc --noEmit, npx vite build 성공",
+      "npx vitest run src/App.test.tsx 통과",
+      "src/main.tsx 변경 0줄"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [
+      "react-router-dom"
+    ],
+    "ui_requirements": "<AppStateProvider><ToastProvider><Routes>{S1~S10}</Routes>{['/','/templates','/runs','/plan'].includes(pathname) && <FloatingTabBar items={[플로우 /, 템플릿 /templates, 실행 로그 /runs, 요금제 /plan]}/>}</ToastProvider></AppStateProvider>. 활성 탭은 컬러 틴트만, 탭 변경 시 tickWeak. 하단 fixed 요소는 paddingBottom calc(Npx + env(safe-area-inset-bottom))."
+  },
+  {
+    "id": "0020",
+    "title": "광고 배치·정책 정적 검사 + 최종 폴리시",
+    "epic": "Epic 4. Integration",
+    "task": {
+      "description": "App.tsx와 main.tsx는 건드리지 않는다. 광고·결제 배치와 심사 정책을 자동 검사하는 파일만 만든다. check-policy.mjs는 src/ 전체에서 window.open(, 외부 location.href, HEX 색상, 설치 유도 문구, 구형 WebView 미지원 API, 금지 분석 SDK를 검사한다. policy.test.ts는 같은 규칙을 vitest로 돌린다. adPlacement.test.tsx는 pro 플랜에서 AdSlot·TossRewardAd가 0건인지와 터치 영역 44px을 확인한다.",
+      "acceptance_criteria": [
+        "node scripts/check-policy.mjs가 위반 0건일 때 exit 0, 1건 이상이면 exit 1이다",
+        "src/에서 HEX 정규식과 '설치하세요|다운로드|앱 설치|스토어에서' 매치가 0건이다",
+        "plan.tier 'pro'로 홈·결과·요금제를 렌더링하면 AdSlot·TossRewardAd 렌더가 0회다"
+      ]
+    },
+    "covers": [
+      "G-AC-1",
+      "G-AC-5",
+      "G-AC-6",
+      "G-AC-7",
+      "G-AC-11",
+      "F8-AC-4"
+    ],
+    "files": [
+      "scripts/check-policy.mjs",
+      "src/test/policy.test.ts",
+      "src/test/adPlacement.test.tsx"
+    ],
+    "definition_of_done": [
+      "npx vitest run src/test/policy.test.ts src/test/adPlacement.test.tsx 통과",
+      "node scripts/check-policy.mjs exit 0"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "광고 규칙: AdSlot은 free 플랜에서만, 콘텐츠 섹션 사이·목록 뒤에만(입력 폼·SubmitFooter 위 금지). TossRewardAd는 무료 플랜 AI 생성 결과 미리보기에만. 모든 button/[role=switch]/[role=tab] 44×44px 이상."
+  }
+]

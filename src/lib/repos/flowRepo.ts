@@ -86,4 +86,21 @@ export const flowRepo = {
   delete(id: string): void {
     writeFlows(readFlows().filter((f) => f.id !== id));
   },
+
+  // 실행·스케줄 상태 필드만 갱신 (update()는 FlowDraft 편집 전용이라 이 필드들을 못 건드림)
+  patch(
+    id: string,
+    fields: Partial<Pick<Flow, 'enabled' | 'nextRunAt' | 'lastRunAt' | 'lastRunStatus'>>
+  ): Flow {
+    const flows = readFlows();
+    const idx = flows.findIndex((f) => f.id === id);
+    if (idx === -1) {
+      throw new Error('플로우를 찾을 수 없어요');
+    }
+
+    const updated: Flow = { ...flows[idx], ...fields };
+    flows[idx] = updated;
+    writeFlows(flows);
+    return updated;
+  },
 };

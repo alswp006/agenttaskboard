@@ -12,13 +12,24 @@ import { vi } from "vitest";
  * AC-3: 없는 runId로 들어오면 크래시 없이 빈 상태가 보인다
  */
 
-import { mockTds, mockAppsInToss, mockRouter, mockNavigate } from "@/__tests__/__helpers__/mocks";
+import { mockTds, mockAppsInToss } from "@/__tests__/__helpers__/mocks";
 import { renderWithRouter } from "@/__tests__/__helpers__/test-utils";
 import type { RunLog } from "@/lib/types";
 
 mockTds();
 mockAppsInToss();
-mockRouter();
+
+// mocks.ts의 mockRouter()는 vi.doMock(비-hoisted)이라 RunDetail을 정적 import하는 이 파일에는
+// 너무 늦게 적용된다(packet-0010과 같은 순서 문제) — 파일 최상단에서 hoisting되는 리터럴
+// vi.mock을 직접 써서 mockNavigate가 실제로 호출되게 한다.
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // RunDetail이 실제로 어느 경로에서 실행 목록을 읽는지(전역 AppState vs repo 직접 조회)는
 // 구현 선택지라 확정할 수 없다 — 두 경로 모두 같은 데이터를 반환하도록 함께 목킹해

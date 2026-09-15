@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
@@ -15,7 +15,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
  * 실제 ToastProvider가 렌더한 DOM 텍스트로 검증하므로 구현 세부사항에 얽매이지 않는다.
  */
 
-import { mockTds, mockAppsInToss, mockRouter, mockNavigate, mockLocation } from "@/__tests__/__helpers__/mocks";
+import { mockTds, mockAppsInToss, mockNavigate, mockLocation } from "@/__tests__/__helpers__/mocks";
 import { AppStateProvider } from "@/hooks/AppStateContext";
 import { ToastProvider } from "@/hooks/ToastProvider";
 import { flowRepo } from "@/lib/repos/flowRepo";
@@ -23,7 +23,18 @@ import type { Flow, FlowDraft, BuilderLocationState } from "@/lib/types";
 
 mockTds();
 mockAppsInToss();
-mockRouter();
+
+// mocks.ts의 mockRouter()는 vi.doMock(비-hoisted)이라 Builder를 정적 import하는 이 파일에는
+// 너무 늦게 적용된다(packet-0010과 같은 순서 문제) — 파일 최상단에서 hoisting되는 리터럴
+// vi.mock을 직접 써서 mockNavigate/mockLocation.state가 실제로 반영되게 한다.
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useLocation: () => mockLocation,
+  };
+});
 
 import Builder from "@/pages/Builder";
 

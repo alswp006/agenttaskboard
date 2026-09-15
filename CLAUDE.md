@@ -189,7 +189,7 @@ import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
-Available topics: deploy(4), general(12), testing(2), ui(3)
+Available topics: deploy(4), general(13), testing(2), ui(3)
 
 Key lessons (verify against actual code before applying):
 - [general] 화면·라우팅 등 소비자 모듈은 그것이 import하는 생산자 모듈이 병합된 뒤에만 병합하고, 순서를 지킬 수 없으면 소비자 병합과 동시에 최소 플레이스홀더를 만들어 매 병합 직후 타입체크와 빌드가 항상 통과하도록 유지하라. (60% · 타 앱 1회 — 맹신 금지)

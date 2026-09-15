@@ -84,9 +84,10 @@ describe("라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유)", 
     errorSpy.mockRestore();
   });
 
-  it("AC-2: 정의되지 않은 경로는 홈(SummaryHero)으로 리다이렉트된다", () => {
+  it("AC-2: 정의되지 않은 경로는 홈으로 리다이렉트된다", () => {
+    // home-usage-row는 패킷 0008(Home) 구현의 항상 렌더되는 요소 — 홈 도달을 확인하는 안정적 지표.
     renderWithRouter(React.createElement(App), { initialEntries: ["/no-such-route"] });
-    expect(screen.getByTestId("home-hero")).toBeInTheDocument();
+    expect(screen.getByTestId("home-usage-row")).toBeInTheDocument();
     expect(screen.getByRole("tablist")).toBeInTheDocument();
   });
 

@@ -1,73 +1,187 @@
-import { Top, Paragraph, Spacing, ListRow, Button } from '@toss/tds-mobile';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ScreenScaffold } from '../components/ScreenScaffold';
-import { SummaryHero } from '../components/SummaryHero';
-import { Card } from '../components/Card';
+import { Top, ListRow, Badge, Button, Spacing, Asset } from '@toss/tds-mobile';
+import { generateHapticFeedback } from '@apps-in-toss/web-framework';
+import { useAppState } from '@/hooks/AppStateContext';
+import { useAppToast } from '@/hooks/ToastProvider';
+import { ERROR_CODES } from '@/lib/errors';
+import { RUN_LIMIT, type RouteState, type Flow, type RunStatus } from '@/lib/types';
+import { format } from '@/lib/format';
+import { ScreenScaffold } from '@/components/ScreenScaffold';
+import { Card } from '@/components/Card';
+import { MiniBar } from '@/components/MiniBar';
+import { EmptyState } from '@/components/StateView';
+import { PlanAdSlot } from '@/components/PlanAdSlot';
 
-/**
- * Golden Home page — 대시보드/탭-루트 골든 레퍼런스.
- *
- * 다른 페이지를 쓸 때 이 패턴을 모방하라:
- * - ScreenScaffold로 감싼다(raw fragment 골격 금지) — safe-area + 100dvh 자동 처리.
- * - 화면 최상단에 SummaryHero로 시각 앵커를 만든다('휑함'의 가장 큰 원인은 앵커 부재).
- *   데이터가 있으면 value에 <Amount value={n} unit="원" typography="t1" />로 핵심 숫자를 크게 박아라.
- * - 1차 진입 액션은 SummaryHero 카드 내부 버튼(display="block", 전체폭)에 둔다.
- *   → 화면 중앙 부유/좌측 글자폭 버튼 금지. 하단 TabBar가 있으면 SubmitFooter와 겹치므로 카드 안에.
- * - 핵심 정보는 raw <div>가 아니라 Card로 묶어 위계를 만든다.
- * - 하단 탭이 필요하면(2~5탭): bottom={<FloatingTabBar items={[{label,path}...]} />}.
- *   ('TDS TabBar'는 존재하지 않는다 — 직접 만들지 말고 FloatingTabBar를 써라.)
- * - 카피는 CLAUDE.md "카피 규칙 — AI 냄새 금지"를 따른다: 기능 나열식 홍보 문구·상투구·
- *   generic 버튼("시작하기") 금지. 이 파일의 예시 문구도 앱 맥락에 맞게 교체 대상이다.
- *
- * Scaffold tokens (replaced by scaffold-toss.ts at project creation):
- *   AgentTaskBoard -> the app's display name
- *   AI 에이전트에게 업무를 위임하는 것이 일상이 된 2026년, 비개발자 직장인이 복잡한 코딩 없이 AI 에이전트 업무 파이프라인을 시각적으로 설계·실행·모니터링하는 노코드 오케스트레이션 툴    -> the one-line description
- */
+const FLOW_LIMIT = 50;
 
-// ⚠ 이 목록은 골격 예시다 — 앱의 실제 콘텐츠(핵심 지표·최근 기록·바로가기)로 반드시 교체하라.
-// '간편한 사용/빠른 처리' 같은 기능 나열식 홍보 문구는 카피 규칙(CLAUDE.md "AI 냄새 금지") 위반이다.
-// 사용자가 이 화면에서 실제로 확인할 정보를 넣어라 — 아래처럼 데이터가 사는 행으로.
-const HIGHLIGHTS = [
-  { title: '오늘', description: '아직 기록이 없어요' },
-  { title: '이번 주', description: '기록 3건 · 평균 12분' },
-];
+const RUN_STATUS_BADGE: Record<RunStatus, { label: string; color: 'green' | 'red' }> = {
+  success: { label: '성공', color: 'green' },
+  failed: { label: '실패', color: 'red' },
+};
+
+// SDK는 WebView 밖에서 throw하므로 가드 필수 — 흰 화면 방지.
+function fireHaptic(type: 'success' | 'error') {
+  try {
+    Promise.resolve(generateHapticFeedback({ type })).catch(() => {});
+  } catch {
+    /* WebView 밖 — 무시 */
+  }
+}
+
+function flowStatusBadge(flow: Flow) {
+  if (!flow.lastRunStatus) {
+    return { label: '실행 전', color: 'elephant' as const };
+  }
+  return RUN_STATUS_BADGE[flow.lastRunStatus];
+}
 
 export default function Home() {
   const navigate = useNavigate();
+  const { flows, runs, usage, plan, isFree, consumeCorruption } = useAppState();
+  const { showToast } = useAppToast();
+
+  const corruptionToastShownRef = useRef(false);
+  useEffect(() => {
+    if (corruptionToastShownRef.current) return;
+    const flowsCorrupted = consumeCorruption('flows');
+    const usageCorrupted = consumeCorruption('usage');
+    const planCorrupted = consumeCorruption('plan');
+    if (flowsCorrupted || usageCorrupted || planCorrupted) {
+      corruptionToastShownRef.current = true;
+      showToast(ERROR_CODES.DATA_CORRUPTED, 'top');
+    }
+    // 마운트 1회만 — React 18 StrictMode 이중 호출에도 ref가 중복 노출을 막는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const failedCount = runs.filter((run) => run.status === 'failed').length;
+  const runLimit = RUN_LIMIT[plan.tier];
+  const sortedFlows = [...flows].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+
+  function handleGenerateClick() {
+    navigate('/generate');
+  }
+
+  function handleManualCreateClick() {
+    if (flows.length >= FLOW_LIMIT) {
+      fireHaptic('error');
+      showToast(`플로우는 최대 ${FLOW_LIMIT}개까지 만들 수 있어요`, 'top');
+      return;
+    }
+    fireHaptic('success');
+    navigate('/flows/new');
+  }
 
   return (
-    <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>AgentTaskBoard</Top.TitleParagraph>} />}
-    >
-      {/* 시각 앵커: 헤드라인 + 카드 내 진입 버튼(부유 금지, display="block" 전체폭).
-          데이터 앱이면 value를 <Amount typography="t1" />(핵심 숫자)로 교체하라. */}
-      <SummaryHero
-        label="AgentTaskBoard"
-        value={<Paragraph.Text typography="t2">AI 에이전트에게 업무를 위임하는 것이 일상이 된 2026년, 비개발자 직장인이 복잡한 코딩 없이 AI 에이전트 업무 파이프라인을 시각적으로 설계·실행·모니터링하는 노코드 오케스트레이션 툴</Paragraph.Text>}
-        caption="로그인 없이 바로 쓸 수 있어요"
-        action={
-          // 라벨은 앱의 핵심 행동 동사로 교체하라 — "연봉 계산하기"/"기록 남기기" 등.
-          // generic "시작하기"/"확인"은 카피 규칙 위반. onClick도 실제 첫 화면 경로로.
-          <Button variant="fill" display="block" onClick={() => navigate('/')}>
-            첫 결과 보기
-          </Button>
+    <ScreenScaffold top={<Top title={<Top.TitleParagraph>내 플로우</Top.TitleParagraph>} />}>
+      {failedCount > 0 && (
+        <>
+          <ListRow
+            data-testid="home-failed-alert"
+            contents={<ListRow.Texts type="1RowTypeA" top={`실패한 실행 ${failedCount}건이 있어요`} />}
+            right={
+              <Badge size="medium" variant="weak" color="red">
+                실패
+              </Badge>
+            }
+            onClick={() =>
+              navigate('/runs', { state: { filter: 'failed' } as RouteState['/runs'] })
+            }
+          />
+          <Spacing size={8} />
+        </>
+      )}
+
+      <ListRow
+        data-testid="home-usage-row"
+        contents={
+          <ListRow.Texts
+            type="2RowTypeA"
+            top={
+              runLimit === null
+                ? `이번 달 실행 ${usage.runCount}회 · 무제한`
+                : `이번 달 실행 ${usage.runCount}/${runLimit}회`
+            }
+            bottom={runLimit !== null ? <MiniBar ratio={usage.runCount / runLimit} /> : '무제한 플랜이에요'}
+          />
         }
-        testId="home-hero"
+        onClick={() => navigate('/plan')}
       />
 
+      <Spacing size={16} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <Button variant="fill" size="large" display="block" onClick={handleGenerateClick}>
+          AI로 만들기
+        </Button>
+        <Button variant="weak" size="large" display="block" onClick={handleManualCreateClick}>
+          직접 만들기
+        </Button>
+      </div>
+
       <Spacing size={24} />
 
-      {/* 핵심 정보는 Card로 묶기(raw div 금지) — 위계 생성 */}
-      <Card testId="home-highlights">
-        {HIGHLIGHTS.map((h, idx) => (
-          <ListRow
-            key={idx}
-            contents={<ListRow.Texts type="2RowTypeA" top={h.title} bottom={h.description} />}
+      {isFree && (
+        <>
+          <Card>
+            <ListRow
+              data-testid="home-plan-banner"
+              onClick={() => navigate('/plan')}
+              contents={
+                <ListRow.Texts
+                  type="2RowTypeA"
+                  top="무료 플랜을 이용 중이에요"
+                  bottom="더 많은 실행 횟수가 필요하면 요금제를 둘러보세요"
+                />
+              }
+            />
+          </Card>
+          <Spacing size={16} />
+        </>
+      )}
+
+      {sortedFlows.length === 0 ? (
+        <div data-testid="home-empty">
+          <EmptyState
+            icon={<Asset.ContentIcon name="iconStarRegular" alt="플로우 없음" />}
+            title="아직 만든 플로우가 없어요"
+            description="템플릿으로 빠르게 시작할 수 있어요"
+            action={
+              <Button variant="weak" onClick={() => navigate('/templates')}>
+                템플릿 둘러보기
+              </Button>
+            }
           />
-        ))}
-      </Card>
+        </div>
+      ) : (
+        <div data-testid="flow-list">
+          {sortedFlows.map((flow) => {
+            const badge = flowStatusBadge(flow);
+            return (
+              <ListRow
+                key={flow.id}
+                data-testid="flow-row"
+                contents={<ListRow.Texts type="2RowTypeA" top={flow.name} bottom={format(flow)} />}
+                right={
+                  <Badge size="medium" variant="weak" color={badge.color}>
+                    {badge.label}
+                  </Badge>
+                }
+                onClick={() => navigate(`/flows/${flow.id}`)}
+              />
+            );
+          })}
+        </div>
+      )}
 
-      <Spacing size={24} />
+      <Spacing size={16} />
+      <PlanAdSlot />
+
+      <Spacing size={32} />
+      <Spacing size={32} />
     </ScreenScaffold>
   );
 }

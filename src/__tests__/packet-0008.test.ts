@@ -192,11 +192,14 @@ describe("홈 — 플로우 목록 /", () => {
 
   it("AC-6: 무료 플랜이면 무료 플랜 배너가 보이고 탭하면 /plan으로 이동하며, 유료 플랜이면 배너가 없다", () => {
     useAppStateMock.mockReturnValue(baseAppState({ isFree: true, plan: { tier: "free", purchasedAt: null, expiresAt: null } }));
-    renderHome();
+    const { unmount } = renderHome();
 
     const banner = screen.getByTestId("home-plan-banner");
     fireEvent.click(banner);
     expect(mockNavigate).toHaveBeenCalledWith("/plan");
+    // 다음 render()는 새 컨테이너를 document.body에 추가로 append한다(같은 it 안에서는
+    // afterEach 자동 cleanup이 아직 안 돈다) — 먼저 unmount해야 free 플랜 배너가 실제로 사라진다.
+    unmount();
 
     useAppStateMock.mockReturnValue(
       baseAppState({ isFree: false, plan: { tier: "pro", purchasedAt: "2026-09-01T00:00:00.000Z", expiresAt: null } }),

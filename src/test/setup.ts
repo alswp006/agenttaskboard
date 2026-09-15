@@ -18,8 +18,19 @@ import "@testing-library/jest-dom/vitest";
 // ── localStorage / sessionStorage isolation ──
 // jsdom's storage persists between tests by default. Clear it to prevent pollution.
 beforeEach(() => {
-  localStorage.clear();
-  sessionStorage.clear();
+  // 일부 테스트는 window.localStorage를 clear() 없는 최소 mock 객체로 통째로
+  // 교체한다(Object.defineProperty) — jsdom 환경은 테스트 파일당 1회만 생성되므로
+  // 이후 테스트의 전역 clear() 호출이 깨진다. 방어적으로 감싼다.
+  try {
+    localStorage.clear();
+  } catch {
+    /* noop */
+  }
+  try {
+    sessionStorage.clear();
+  } catch {
+    /* noop */
+  }
 });
 
 // ── requestAnimationFrame shim for jsdom ──

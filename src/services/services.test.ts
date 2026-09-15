@@ -86,7 +86,11 @@ describe('AC-1[P0]: runService.runNow — usage === RUN_LIMIT', () => {
     const { runService } = await import('@/services/runService');
     const result = await runService.runNow('flow_abc12345');
 
-    expect(startRunMock).toHaveBeenCalledWith('flow_abc12345', 'manual');
+    expect(startRunMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^run_/),
+      expect.objectContaining({ id: 'flow_abc12345' }),
+      'manual',
+    );
     expect(runRepoMock.add).toHaveBeenCalledWith(run);
     expect(usageRepoMock.addRun).toHaveBeenCalledTimes(1);
     expect(flowRepoMock.patch).toHaveBeenCalledWith('flow_abc12345', {
@@ -218,7 +222,11 @@ describe('executeFlow — contract.ts executeFlowFn 계약 (runService.runNow �
     const { executeFlow } = await import('@/services/runService');
     const result = await executeFlow('flow_abc12345');
 
-    expect(startRunMock).toHaveBeenCalledWith('flow_abc12345', 'manual');
+    expect(startRunMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^run_/),
+      expect.objectContaining({ id: 'flow_abc12345' }),
+      'manual',
+    );
     expect(result).toBe(run);
   });
 });

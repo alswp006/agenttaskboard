@@ -7,9 +7,9 @@ import {
   ListRunsResponse,
   PutScheduleResponse,
   DeleteScheduleResponse,
-  type RunRequest,
-  type PutScheduleRequest,
 } from './contracts';
+
+const GENERATE_TIMEOUT_MS = 20000;
 
 function assertValid<T>(guard: { isValid: (v: unknown) => v is T }, data: unknown): T {
   if (!guard.isValid(data)) {
@@ -18,17 +18,26 @@ function assertValid<T>(guard: { isValid: (v: unknown) => v is T }, data: unknow
   return data;
 }
 
-export async function generateFlow(prompt: string): Promise<Flow> {
-  const data = await apiClient.post('/api/flows/generate', { prompt });
-  return assertValid(GenerateResponse, data);
+export async function generateFlow(prompt: string): Promise<GenerateResponse> {
+  const data = await apiClient.post(
+    '/api/flows/generate',
+    { prompt },
+    { timeoutMs: GENERATE_TIMEOUT_MS },
+  );
+  if (!GenerateResponse.isValid(data)) {
+    throw new ApiError(
+      'INVALID_RESPONSE',
+      '아직 지원하지 않는 요청이에요. 언제·무엇을·어디로 보낼지 드러나게 다시 적어주세요',
+      null,
+      'UNSUPPORTED_REQUEST',
+    );
+  }
+  return data;
 }
 
-export async function startRun(
-  flowId: string,
-  trigger: RunRequest['trigger'],
-): Promise<RunLog> {
-  const data = await apiClient.post('/api/runs', { flowId, trigger });
-  return assertValid(RunResponse, data);
+export async function startRun(runId: string, flow: Flow, trigger: 'manual'): Promise<RunLog> {
+  const data = await apiClient.post('/api/runs', { runId, flow, trigger });
+  return assertValid(RunResponse, data).run;
 }
 
 export async function listRuns(
@@ -42,9 +51,9 @@ export async function listRuns(
 
 export async function updateSchedule(
   flowId: string,
-  trigger: PutScheduleRequest,
+  flow: Flow,
 ): Promise<PutScheduleResponse> {
-  const data = await apiClient.put(`/api/schedules/${flowId}`, trigger);
+  const data = await apiClient.put(`/api/schedules/${flowId}`, { flow, timezone: 'Asia/Seoul' });
   return assertValid(PutScheduleResponse, data);
 }
 

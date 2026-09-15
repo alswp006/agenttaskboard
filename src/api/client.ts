@@ -3,6 +3,7 @@ import { ERROR_CODES } from '@/lib/errors';
 
 export type ApiErrorCode =
   | 'NETWORK_ERROR'
+  | 'TIMEOUT'
   | 'RATE_LIMITED'
   | 'QUOTA_EXCEEDED'
   | 'INVALID_REQUEST'
@@ -14,12 +15,20 @@ export type ApiErrorCode =
 export class ApiError extends Error {
   code: ApiErrorCode;
   status: number | null;
+  /** 서버 응답 { error: string } 본문 그대로 — 엔드포인트별 세부 메시지 매핑에 사용 */
+  serverCode: string | null;
 
-  constructor(code: ApiErrorCode, message: string, status: number | null = null) {
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    status: number | null = null,
+    serverCode: string | null = null,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.status = status;
+    this.serverCode = serverCode;
   }
 }
 
@@ -64,10 +73,15 @@ function statusToMessage(code: ApiErrorCode): string {
   }
 }
 
+export interface RequestOptions {
+  timeoutMs?: number;
+}
+
 async function request(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   path: string,
   body?: unknown,
+  options?: RequestOptions,
 ): Promise<any> {
   const url = `${API_BASE_URL}${path}`;
   const headers: Record<string, string> = {
@@ -76,7 +90,11 @@ async function request(
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, options?.timeoutMs ?? REQUEST_TIMEOUT_MS);
 
   let response: Response;
   try {
@@ -87,6 +105,9 @@ async function request(
       signal: controller.signal,
     });
   } catch {
+    if (timedOut) {
+      throw new ApiError('TIMEOUT', '요청 응답 시간이 너무 오래 걸려요. 다시 시도해주세요', 0);
+    }
     throw new ApiError('NETWORK_ERROR', ERROR_CODES.NETWORK_ERROR);
   } finally {
     clearTimeout(timeoutId);
@@ -94,7 +115,16 @@ async function request(
 
   if (!response.ok) {
     const code = statusToErrorCode(response.status);
-    throw new ApiError(code, statusToMessage(code), response.status);
+    let serverCode: string | null = null;
+    try {
+      const errorBody = await response.json();
+      if (errorBody && typeof errorBody.error === 'string') {
+        serverCode = errorBody.error;
+      }
+    } catch {
+      // 에러 응답 본문이 없거나 JSON이 아님 — serverCode 없이 진행
+    }
+    throw new ApiError(code, statusToMessage(code), response.status, serverCode);
   }
 
   try {
@@ -105,8 +135,8 @@ async function request(
 }
 
 export const apiClient = {
-  get: (path: string) => request('GET', path),
-  post: (path: string, body?: unknown) => request('POST', path, body),
-  put: (path: string, body?: unknown) => request('PUT', path, body),
-  delete: (path: string) => request('DELETE', path),
+  get: (path: string, options?: RequestOptions) => request('GET', path, undefined, options),
+  post: (path: string, body?: unknown, options?: RequestOptions) => request('POST', path, body, options),
+  put: (path: string, body?: unknown, options?: RequestOptions) => request('PUT', path, body, options),
+  delete: (path: string, options?: RequestOptions) => request('DELETE', path, undefined, options),
 };

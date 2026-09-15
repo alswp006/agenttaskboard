@@ -91,7 +91,11 @@ describe('AC-1[P0]: runNow() - usage = RUN_LIMIT일 때 QUOTA_EXCEEDED', () => {
     const { runService } = await import('@/services/runService');
     const result = await runService.runNow('flow_abc12345');
 
-    expect(startRunMock).toHaveBeenCalledWith('flow_abc12345', 'manual');
+    expect(startRunMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^run_/),
+      expect.objectContaining({ id: 'flow_abc12345' }),
+      'manual',
+    );
     expect(usageRepoMock.addRun).toHaveBeenCalledTimes(1);
     expect(result.id).toBe(run.id);
   });

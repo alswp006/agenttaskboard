@@ -1,27 +1,43 @@
 /** API Contract 타입 — 외부 API 요청/응답 형태 (SPEC API Contract 절 대응) */
-import type { Flow, RunLog, Trigger } from '@/lib/types';
+import type { Flow, FlowDraft, RunLog } from '@/lib/types';
 
-export interface GenerateResponse extends Flow {}
+function isValidTriggerType(v: unknown): boolean {
+  return v === 'manual' || v === 'daily' || v === 'weekly';
+}
+
+export interface GenerateResponse {
+  draft: FlowDraft;
+  missingFields: string[];
+}
 export const GenerateResponse = {
   isValid: (v: unknown): v is GenerateResponse =>
     !!v &&
     typeof v === 'object' &&
-    typeof (v as any).id === 'string' &&
-    typeof (v as any).name === 'string',
+    !!(v as any).draft &&
+    typeof (v as any).draft === 'object' &&
+    Array.isArray((v as any).draft.actions) &&
+    (v as any).draft.actions.length > 0 &&
+    isValidTriggerType((v as any).draft.trigger?.type) &&
+    Array.isArray((v as any).missingFields),
 };
 
 export interface RunRequest {
-  flowId: string;
-  trigger: 'manual' | 'schedule';
+  runId: string;
+  flow: Flow;
+  trigger: 'manual';
 }
 
-export interface RunResponse extends RunLog {}
+export interface RunResponse {
+  run: RunLog;
+}
 export const RunResponse = {
   isValid: (v: unknown): v is RunResponse =>
     !!v &&
     typeof v === 'object' &&
-    typeof (v as any).id === 'string' &&
-    typeof (v as any).status === 'string',
+    !!(v as any).run &&
+    typeof (v as any).run === 'object' &&
+    typeof (v as any).run.id === 'string' &&
+    typeof (v as any).run.status === 'string',
 };
 
 export interface ListRunsResponse {
@@ -36,21 +52,32 @@ export const ListRunsResponse = {
     typeof (v as any).total === 'number',
 };
 
-/** PUT /api/schedules/:flowId 요청 — Trigger 계약 재사용 */
-export type PutScheduleRequest = Trigger;
+/** PUT /api/schedules/:flowId 요청 */
+export interface PutScheduleRequest {
+  flow: Flow;
+  timezone: 'Asia/Seoul';
+}
 
 export interface PutScheduleResponse {
+  flowId: string;
   nextRunAt: string;
 }
 export const PutScheduleResponse = {
   isValid: (v: unknown): v is PutScheduleResponse =>
-    !!v && typeof v === 'object' && typeof (v as any).nextRunAt === 'string',
+    !!v &&
+    typeof v === 'object' &&
+    typeof (v as any).flowId === 'string' &&
+    typeof (v as any).nextRunAt === 'string',
 };
 
 export interface DeleteScheduleResponse {
-  success: boolean;
+  flowId: string;
+  deleted: true;
 }
 export const DeleteScheduleResponse = {
   isValid: (v: unknown): v is DeleteScheduleResponse =>
-    !!v && typeof v === 'object' && typeof (v as any).success === 'boolean',
+    !!v &&
+    typeof v === 'object' &&
+    typeof (v as any).flowId === 'string' &&
+    (v as any).deleted === true,
 };

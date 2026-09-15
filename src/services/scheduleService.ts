@@ -25,7 +25,7 @@ export const scheduleService = {
       throw new ApiError('QUOTA_EXCEEDED', ERROR_CODES.QUOTA_EXCEEDED);
     }
 
-    const response = await updateSchedule(flowId, flow.trigger);
+    const response = await updateSchedule(flowId, flow);
     return flowRepo.patch(flowId, { enabled: true, nextRunAt: response.nextRunAt });
   },
 

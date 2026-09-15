@@ -5,6 +5,7 @@ import { flowRepo } from '@/lib/repos/flowRepo';
 import { runRepo } from '@/lib/repos/runRepo';
 import { usageRepo } from '@/lib/repos/usageRepo';
 import { planRepo } from '@/lib/repos/planRepo';
+import { generateRunId } from '@/lib/time';
 import { ERROR_CODES } from '@/lib/errors';
 import { ApiError } from '@/api/client';
 import { startRun } from '@/api/endpoints';
@@ -18,13 +19,14 @@ export const runService = {
       throw new ApiError('QUOTA_EXCEEDED', ERROR_CODES.QUOTA_EXCEEDED);
     }
 
-    const run = await startRun(flowId, 'manual');
+    const flow = flowRepo.get(flowId);
+    if (!flow) throw new Error('플로우를 찾을 수 없어요');
+
+    const run = await startRun(generateRunId(), flow, 'manual');
 
     runRepo.add(run);
     usageRepo.addRun();
-    if (flowRepo.get(flowId)) {
-      flowRepo.patch(flowId, { lastRunAt: run.startedAt, lastRunStatus: run.status });
-    }
+    flowRepo.patch(flowId, { lastRunAt: run.startedAt, lastRunStatus: run.status });
 
     return run;
   },

@@ -181,7 +181,7 @@ describe("플로우 상세 /flows/:flowId", () => {
     (globalThis.fetch as any).mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ nextRunAt: "2026-09-17T09:00:00.000Z" }),
+      json: async () => ({ flowId: FLOW_ID, nextRunAt: "2026-09-17T09:00:00.000Z" }),
     });
 
     renderDetail();

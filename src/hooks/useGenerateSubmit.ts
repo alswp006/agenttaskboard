@@ -1,15 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient, ApiError } from '@/api/client';
+import { ApiError } from '@/api/client';
+import { generateFlow } from '@/api/endpoints';
 import { clientRepo } from '@/lib/repos/clientRepo';
 import { useAppToast } from '@/hooks/ToastProvider';
 import { ERROR_CODES } from '@/lib/errors';
-import type { FlowDraft, RouteState } from '@/lib/types';
-
-interface GenerateResponseBody {
-  draft: FlowDraft;
-  missingFields: string[];
-}
+import type { RouteState } from '@/lib/types';
 
 /**
  * /generate 제출 흐름: AI 고지 미확인 시 요청을 미뤄뒀다가(pendingPromptRef),
@@ -25,14 +21,23 @@ export function useGenerateSubmit() {
     async (prompt: string) => {
       setLoading(true);
       try {
-        const { draft, missingFields } = (await apiClient.post('/api/flows/generate', {
-          prompt,
-        })) as GenerateResponseBody;
+        const { draft, missingFields } = await generateFlow(prompt);
         navigate('/generate/result', {
           state: { prompt, draft, missingFields } as RouteState['/generate/result'],
         });
       } catch (err) {
-        const message = err instanceof ApiError ? err.message : ERROR_CODES.NETWORK_ERROR;
+        let message: string = ERROR_CODES.NETWORK_ERROR;
+        if (err instanceof ApiError) {
+          if (err.code === 'TIMEOUT') {
+            message = 'AI 응답이 지연되고 있어요. 다시 시도해주세요';
+          } else if (err.serverCode === 'UNSUPPORTED_REQUEST') {
+            message = '아직 지원하지 않는 요청이에요. 언제·무엇을·어디로 보낼지 드러나게 다시 적어주세요';
+          } else if (err.serverCode === 'AI_UNAVAILABLE') {
+            message = 'AI가 잠시 응답하지 않아요. 다시 시도해주세요';
+          } else {
+            message = err.message;
+          }
+        }
         showToast(message, 'top');
       } finally {
         setLoading(false);

@@ -228,36 +228,26 @@ describe('POST /api/flows/generate — 흐름 생성', () => {
   it('should call POST /api/flows/generate with prompt and return GenerateResponse', async () => {
     const { generateFlow } = await import('@/api/endpoints');
 
-    const mockFlow: Flow = {
-      id: 'flow_1',
+    const mockDraft: FlowDraft = {
       name: 'Generated Flow',
       input: { type: 'text', text: 'test content' },
       trigger: { type: 'manual' },
       aiStep: { task: 'summarize', instruction: '', targetLanguage: null },
       actions: [{ type: 'in_app' }],
-      source: 'ai',
-      templateId: null,
-      enabled: true,
-      nextRunAt: null,
-      lastRunAt: null,
-      lastRunStatus: null,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
     };
 
     const mockResponse = {
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValueOnce(mockFlow),
+      json: vi.fn().mockResolvedValueOnce({ draft: mockDraft, missingFields: [] }),
     };
 
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse);
 
     const result = await generateFlow('create a summarizer for AI news');
 
-    expect(result.id).toBe('flow_1');
-    expect(result.name).toBe('Generated Flow');
-    expect(result.source).toBe('ai');
+    expect(result.draft.name).toBe('Generated Flow');
+    expect(result.missingFields).toEqual([]);
   });
 
   it('should handle 400 validation error from /api/flows/generate', async () => {
@@ -299,6 +289,23 @@ describe('POST /api/runs — 흐름 실행', () => {
     vi.restoreAllMocks();
   });
 
+  const mockFlow: Flow = {
+    id: 'flow_1',
+    name: 'Test Flow',
+    input: { type: 'text', text: 'test content' },
+    trigger: { type: 'manual' },
+    aiStep: { task: 'summarize', instruction: '', targetLanguage: null },
+    actions: [{ type: 'in_app' }],
+    source: 'manual',
+    templateId: null,
+    enabled: false,
+    nextRunAt: null,
+    lastRunAt: null,
+    lastRunStatus: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
   it('should call POST /api/runs and return RunResponse', async () => {
     const { startRun } = await import('@/api/endpoints');
 
@@ -320,12 +327,12 @@ describe('POST /api/runs — 흐름 실행', () => {
     const mockResponse = {
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValueOnce(mockRun),
+      json: vi.fn().mockResolvedValueOnce({ run: mockRun }),
     };
 
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse);
 
-    const result = await startRun('flow_1', 'manual');
+    const result = await startRun('run_1', mockFlow, 'manual');
 
     expect(result.id).toBe('run_1');
     expect(result.status).toBe('success');
@@ -346,7 +353,7 @@ describe('POST /api/runs — 흐름 실행', () => {
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse);
 
     try {
-      await startRun('flow_1', 'manual');
+      await startRun('run_1', mockFlow, 'manual');
       expect.fail('should have thrown');
     } catch (error: any) {
       expect(error.code).toBe('CONFLICT');
@@ -449,7 +456,24 @@ describe('PUT /api/schedules/:flowId — 일정 수정', () => {
     vi.restoreAllMocks();
   });
 
-  it('should call PUT /api/schedules/:flowId with trigger config', async () => {
+  const mockFlow: Flow = {
+    id: 'flow_1',
+    name: 'Test Flow',
+    input: { type: 'text', text: 'test content' },
+    trigger: { type: 'weekly', days: ['mon', 'wed'], time: '09:00' },
+    aiStep: { task: 'summarize', instruction: '', targetLanguage: null },
+    actions: [{ type: 'in_app' }],
+    source: 'manual',
+    templateId: null,
+    enabled: false,
+    nextRunAt: null,
+    lastRunAt: null,
+    lastRunStatus: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  };
+
+  it('should call PUT /api/schedules/:flowId with the flow and timezone', async () => {
     const { updateSchedule } = await import('@/api/endpoints');
 
     const mockResponse = {
@@ -457,23 +481,20 @@ describe('PUT /api/schedules/:flowId — 일정 수정', () => {
       status: 200,
       json: vi
         .fn()
-        .mockResolvedValueOnce({ nextRunAt: '2024-02-01T09:00:00Z' }),
+        .mockResolvedValueOnce({ flowId: 'flow_1', nextRunAt: '2024-02-01T09:00:00Z' }),
     };
 
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse);
 
-    const result = await updateSchedule('flow_1', {
-      type: 'weekly',
-      days: ['mon', 'wed'],
-      time: '09:00',
-    });
+    const result = await updateSchedule('flow_1', mockFlow);
 
     expect(result.nextRunAt).toBe('2024-02-01T09:00:00Z');
 
-    // Verify URL includes flowId
+    // Verify URL includes flowId and body includes flow + timezone
     const fetchCall = (global.fetch as any).mock.calls[0];
-    const url = fetchCall[0];
+    const [url, init] = fetchCall;
     expect(url).toContain('flow_1');
+    expect(JSON.parse(init.body)).toEqual({ flow: mockFlow, timezone: 'Asia/Seoul' });
   });
 
   it('should handle 404 not found for updateSchedule', async () => {
@@ -488,9 +509,7 @@ describe('PUT /api/schedules/:flowId — 일정 수정', () => {
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse);
 
     try {
-      await updateSchedule('nonexistent_flow', {
-        type: 'manual',
-      });
+      await updateSchedule('nonexistent_flow', { ...mockFlow, trigger: { type: 'manual' } });
       expect.fail('should have thrown');
     } catch (error: any) {
       expect(error.code).toBe('NOT_FOUND');
@@ -521,14 +540,14 @@ describe('DELETE /api/schedules/:flowId — 일정 삭제', () => {
     const mockResponse = {
       ok: true,
       status: 200,
-      json: vi.fn().mockResolvedValueOnce({ success: true }),
+      json: vi.fn().mockResolvedValueOnce({ flowId: 'flow_1', deleted: true }),
     };
 
     global.fetch = vi.fn().mockResolvedValueOnce(mockResponse);
 
     const result = await deleteSchedule('flow_1');
 
-    expect(result.success).toBe(true);
+    expect(result.deleted).toBe(true);
 
     // Verify URL includes flowId
     const fetchCall = (global.fetch as any).mock.calls[0];

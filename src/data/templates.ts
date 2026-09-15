@@ -1,0 +1,90 @@
+import type { FlowTemplate } from '@/lib/types';
+
+export const TEMPLATES: FlowTemplate[] = [
+  {
+    id: 'tpl-daily-news-brief',
+    title: '아침 뉴스 요약 브리핑',
+    description: '관심 키워드 뉴스를 매일 아침 요약해서 앱으로 보내드려요',
+    category: 'report',
+    draft: {
+      name: '아침 뉴스 요약',
+      input: { type: 'news_keyword', keyword: '경제' },
+      trigger: { type: 'daily', time: '08:00' },
+      aiStep: { task: 'summarize', instruction: '', targetLanguage: null },
+      actions: [{ type: 'in_app' }],
+    },
+    requiredFields: [],
+  },
+  {
+    id: 'tpl-weekly-sheet-report',
+    title: '주간 스프레드시트 리포트',
+    description: '매주 월요일 시트 데이터를 요약해 슬랙으로 전송해요',
+    category: 'report',
+    draft: {
+      name: '주간 리포트',
+      input: { type: 'google_sheet', sheetUrl: 'https://docs.google.com/spreadsheets/d/1AbcXyz', range: 'A1:D50' },
+      trigger: { type: 'weekly', days: ['mon'], time: '09:00' },
+      aiStep: { task: 'summarize', instruction: '', targetLanguage: null },
+      actions: [{ type: 'slack_webhook', webhookUrl: '' }],
+    },
+    requiredFields: ['actions.0.webhookUrl'],
+  },
+  {
+    id: 'tpl-keyword-alert',
+    title: '키워드 뉴스 알림',
+    description: '중요 키워드가 포함된 뉴스를 분류해서 바로 알려드려요',
+    category: 'alert',
+    draft: {
+      name: '키워드 알림',
+      input: { type: 'news_keyword', keyword: '반도체' },
+      trigger: { type: 'daily', time: '09:00' },
+      aiStep: { task: 'classify', instruction: '중요/일반으로 분류', targetLanguage: null },
+      actions: [{ type: 'in_app' }],
+    },
+    requiredFields: [],
+  },
+  {
+    id: 'tpl-slack-live-alert',
+    title: '슬랙 실시간 알림',
+    description: '입력한 내용을 분류해 슬랙 채널로 바로 전송해요',
+    category: 'alert',
+    draft: {
+      name: '슬랙 알림',
+      input: { type: 'text', text: '모니터링할 내용을 입력하세요' },
+      trigger: { type: 'manual' },
+      aiStep: { task: 'classify', instruction: '긴급/일반으로 분류', targetLanguage: null },
+      actions: [{ type: 'slack_webhook', webhookUrl: '' }],
+    },
+    requiredFields: ['actions.0.webhookUrl'],
+  },
+  {
+    id: 'tpl-sheet-cleanup',
+    title: '구글시트 자동 정리',
+    description: '시트 데이터를 요약해서 별도 시트에 정리해 저장해요',
+    category: 'data',
+    draft: {
+      name: '시트 자동 정리',
+      input: { type: 'google_sheet', sheetUrl: 'https://docs.google.com/spreadsheets/d/2DefUvw', range: 'A1:E100' },
+      trigger: { type: 'weekly', days: ['mon', 'wed', 'fri'], time: '10:00' },
+      aiStep: { task: 'summarize', instruction: '', targetLanguage: null },
+      actions: [
+        { type: 'google_sheet_append', sheetUrl: 'https://docs.google.com/spreadsheets/d/2DefUvw', sheetName: '정리결과' },
+      ],
+    },
+    requiredFields: [],
+  },
+  {
+    id: 'tpl-translate-auto',
+    title: '영어 번역 자동화',
+    description: '입력한 텍스트를 영어로 번역해서 앱으로 확인해요',
+    category: 'data',
+    draft: {
+      name: '영어 번역',
+      input: { type: 'text', text: '번역할 내용을 입력하세요' },
+      trigger: { type: 'manual' },
+      aiStep: { task: 'translate', instruction: '', targetLanguage: 'en' },
+      actions: [{ type: 'in_app' }],
+    },
+    requiredFields: [],
+  },
+];

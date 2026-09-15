@@ -8,6 +8,9 @@
 /** 도메인 엔티티 - 모든 패킷이 참조 (구현: 패킷 0001) */
 export type Flow = { id: string; name: string; description?: string; trigger: Trigger; actions: Action[]; enabled: boolean; createdAt: string; updatedAt: string };
 
+/** 실행 로그 항목 - Run.logs 배열의 요소 (구현: 패킷 0001) */
+export type Log = { timestamp: string; level: 'info' | 'warn' | 'error'; message: string };
+
 /** 실행 기록 - 0006, 0013-0015가 사용 (구현: 패킷 0001) */
 export type Run = { id: string; flowId: string; status: 'pending' | 'running' | 'success' | 'failed'; startedAt: string; completedAt?: string; logs: Log[] };
 

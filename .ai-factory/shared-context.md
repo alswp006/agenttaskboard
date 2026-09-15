@@ -72,8 +72,114 @@ export type useAppStateFn = () => { user?: { id: string; email: string }; plan: 
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
-// Domain types — add your app-specific types here
-export {};
+/** Domain Types — Shared across all layers */
+
+// Common types
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+export type HHmm = string; // /^([01]\d|2[0-3]):(00|30)$/ — 30분 단위
+
+export type Trigger =
+  | { type: 'manual' }
+  | { type: 'daily'; time: HHmm }
+  | { type: 'weekly'; days: Weekday[]; time: HHmm };
+
+export type InputSource =
+  | { type: 'text'; text: string }
+  | { type: 'google_sheet'; sheetUrl: string; range: string }
+  | { type: 'news_keyword'; keyword: string };
+
+export type AiTask = 'summarize' | 'classify' | 'translate' | 'custom';
+
+export interface AiStep {
+  task: AiTask;
+  instruction: string;
+  targetLanguage: 'ko' | 'en' | 'ja' | 'zh' | null;
+}
+
+export type Action =
+  | { type: 'in_app' }
+  | { type: 'slack_webhook'; webhookUrl: string }
+  | { type: 'google_sheet_append'; sheetUrl: string; sheetName: string };
+
+export interface FlowDraft {
+  name: string;
+  input: InputSource;
+  trigger: Trigger;
+  aiStep: AiStep;
+  actions: Action[];
+}
+
+export type RunStatus = 'success' | 'failed';
+
+export interface Flow extends FlowDraft {
+  id: string;
+  source: 'manual' | 'ai' | 'template';
+  templateId: string | null;
+  enabled: boolean;
+  nextRunAt: string | null;
+  lastRunAt: string | null;
+  lastRunStatus: RunStatus | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RunErrorCode =
+  | 'AI_FAILED'
+  | 'SLACK_WEBHOOK_FAILED'
+  | 'SHEET_ACCESS_DENIED'
+  | 'NEWS_FETCH_FAILED'
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT';
+
+export interface StepResult {
+  stage: 'trigger' | 'ai' | 'action';
+  label: string;
+  status: 'success' | 'failed' | 'skipped';
+  message: string | null;
+}
+
+export interface RunLog {
+  id: string;
+  flowId: string;
+  flowName: string;
+  trigger: 'manual' | 'schedule';
+  status: RunStatus;
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  aiOutput: string | null;
+  steps: StepResult[];
+  errorCode: RunErrorCode | null;
+  errorMessage: string | null;
+}
+
+export type PlanTier = 'free' | 'starter' | 'pro';
+
+export interface PlanState {
+  tier: PlanTier;
+  purchasedAt: string | null;
+  expiresAt: string | null;
+}
+
+export interface UsageState {
+  month: string; // 'YYYY-MM' (KST)
+  runCount: number;
+}
+
+export const RUN_LIMIT: Record<PlanTier, number | null> = {
+  free: 100,
+  starter: 1000,
+  pro: null,
+};
+
+export interface FlowTemplate {
+  id: string;
+  title: string;
+  description: string;
+  category: 'report' | 'alert' | 'data';
+  draft: FlowDraft;
+  requiredFields: string[];
+}
 
 ```
 
@@ -99,6 +205,7 @@ export {};
   lib/
     contract.ts
     errors.ts
+    repos/
     safeStorage.ts
     storage.ts
     time.ts
@@ -133,9 +240,16 @@ export {};
 ### Exports (src/lib/)
 - contract.ts: export type Flow =; export type Log =; export type Run =; export type Trigger =; export type Action =; export type Template =; export type RouteState =; export type getFlowFn = (id: string) => Promise<Flow | null>
 - errors.ts: export const ERROR_CODES =; export class FlowLimitError extends Error
+- repos/clientRepo.ts: export const clientRepo =
+- repos/flowRepo.ts: export interface CreateFlowInput; export const flowRepo =
+- repos/planRepo.ts: export const planRepo =
+- repos/runRepo.ts: export interface SyncMeta; export const runRepo =
+- repos/shared.ts: export function readEntity<T>( key: string, defaultValue: T, isValid: (v: unknown) => boolean = () => true ): T; export function writeEntity<T>(key: string, value: T): void
+- repos/usageRepo.ts: export const usageRepo =
 - safeStorage.ts: export interface SafeReadResult<T>; export function readSafeStorage<T = any>(key: string, defaultValue: any): SafeReadResult<T>; export function writeSafeStorage<T>(key: string, value: T): void
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
 - time.ts: export function getKSTMonth(date: Date): string; export function getKSTDayWindow(date: Date, days: number):; export function generateUUID(): string; export function generateFlowId(): string; export function generateRunId(): string
+- types.ts: export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'; export type HHmm = string; export type Trigger = |; export type InputSource = |; export type AiTask = 'summarize' | 'classify' | 'translate' | 'custom'; export interface AiStep; export type Action = |; export interface FlowDraft
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -161,73 +275,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 도메인 타입 + RouteState 계약 (files: src/types/flow.ts, src/types/run.ts, src/types/plan.ts, src/types/template.ts, src/navigation/types.ts)
 - 0002: 안전 저장소 코어 + KST/ID 유틸 + 테스트 환경 (files: src/lib/errors.ts, src/lib/safeStorage.ts, src/lib/time.ts, vite.config.ts, src/test/setup.ts)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/lib/contract.ts
-export type Flow = { id: string; name: string; description?: string; trigger: Trigger; actions: Action[]; enabled: boolean; createdAt: string; updatedAt: string };
-export type Log = { timestamp: string; level: 'info' | 'warn' | 'error'; message: string };
-export type Run = { id: string; flowId: string; status: 'pending' | 'running' | 'success' | 'failed'; startedAt: string; completedAt?: string; logs: Log[] };
-export type Trigger = { type: string; config: Record<string, any> };
-export type Action = { id: string; type: string; config: Record<string, any>; enabled: boolean };
-export type Template = { id: string; name: string; description: string; flow: Omit<Flow, 'id' | 'createdAt' | 'updatedAt'>; category: string };
-export type RouteState = { path: string; params: Record<stri
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(4), general(12), testing(2), ui(3)
-
-Key lessons (verify against actual code before applying):
-- [general] 화면·라우팅 등 소비자 모듈은 그것이 import하는 생산자 모듈이 병합된 뒤에만 병합하고, 순서를 지킬 수 없으면 소비자 병합과 동시에 최소 플레이스홀더를 만들어 매 병합 직후 타입체크와 빌드가 항상 통과하도록 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 전역 라우팅·탭바·Provider 배선은 개별 화면보다 먼저(초반 20% 안에) 완료하고 미구현 화면은 스텁 라우트로 연결해, 시간 예산이 소진돼도 앱이 항상 실행 가능한 상태를 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
+- 0003: 엔티티 저장소 (flow·run·usage·plan·client) (files: src/lib/repos/flowRepo.ts, src/lib/repos/runRepo.ts, src/lib/repos/usageRepo.ts, src/lib/repos/planRepo.ts, src/lib/repos/clientRepo.ts)

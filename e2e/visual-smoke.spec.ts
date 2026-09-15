@@ -10,42 +10,44 @@ import { test, expect, type Page } from "@playwright/test";
  *   1) ROUTES에 핵심 화면을 추가(폼/결과/목록/설정 등)
  *   2) 데이터가 필요한 화면은 seed()에서 localStorage를 채워라
  */
-const SMOKE_FLOW_ID = "flow_smoketest01";
+const SMOKE_RUN_ID = "run_smoke0001";
 
 const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/generate/result", name: "generate-result" },
-  { path: `/flows/${SMOKE_FLOW_ID}`, name: "flow-detail" },
+  { path: `/runs/${SMOKE_RUN_ID}`, name: "run-detail" },
   // { path: "/settings", name: "settings" },
 ];
 
 /** 데이터가 필요한 화면용 localStorage 시드(앱에 맞게 채워라). 앱 스크립트보다 먼저 실행된다. */
 async function seed(page: Page): Promise<void> {
   await page.addInitScript(
-    ({ flowId }) => {
+    ({ runId }) => {
       window.localStorage.setItem(
-        "atb:flows",
+        "atb:runs",
         JSON.stringify([
           {
-            id: flowId,
-            name: "아침 뉴스 요약",
-            input: { type: "news_keyword", keyword: "뉴스" },
-            trigger: { type: "daily", time: "09:00" },
-            aiStep: { task: "summarize", instruction: "", targetLanguage: null },
-            actions: [{ type: "slack_webhook", webhookUrl: "https://hooks.slack.com/services/T0000/B0000/XXXXXXXXXXXXXXXXXXXXXXXX" }],
-            source: "manual",
-            templateId: null,
-            enabled: false,
-            nextRunAt: null,
-            lastRunAt: null,
-            lastRunStatus: null,
-            createdAt: "2026-09-01T00:00:00.000Z",
-            updatedAt: "2026-09-01T00:00:00.000Z",
+            id: runId,
+            flowId: "flow_smoke1",
+            flowName: "아침 뉴스 요약",
+            trigger: "manual",
+            status: "failed",
+            startedAt: "2026-09-16T00:10:00.000Z",
+            finishedAt: "2026-09-16T00:10:05.000Z",
+            durationMs: 5000,
+            aiOutput: "오늘의 주요 뉴스 3건을 요약했어요.",
+            steps: [
+              { stage: "trigger", label: "수동 실행", status: "success", message: null },
+              { stage: "ai", label: "요약", status: "success", message: null },
+              { stage: "action", label: "슬랙 전송", status: "failed", message: "웹훅 URL이 올바르지 않아요" },
+            ],
+            errorCode: "SLACK_WEBHOOK_FAILED",
+            errorMessage: "웹훅 URL이 올바르지 않아요",
           },
         ]),
       );
     },
-    { flowId: SMOKE_FLOW_ID },
+    { runId: SMOKE_RUN_ID },
   );
 }
 

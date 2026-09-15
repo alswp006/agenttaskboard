@@ -99,6 +99,7 @@ export * from '@/api/contracts';
 
 ## Existing Codebase (import and use these — do NOT recreate)
 ### File Tree (src/)
+  App.test.tsx
   App.tsx
   api/
     client.ts
@@ -220,7 +221,7 @@ export * from '@/api/contracts';
   lib/types.ts → imports: types/flow, types/run, types/plan, types/template, navigation/types, api/contracts
   lib/validateDraft.ts → imports: lib/types, lib/contract
   pages/Builder.tsx → imports: lib/types, lib/repos/flowRepo, lib/format, hooks/useKeyboardAware, hooks/useBuilderSave, components/builder/draftReducer, components/builder/TriggerInputSheet, components/builder/AiStepSheet, components/builder/ActionListSheet, components/ScreenScaffold, components/BottomCTA, components/Card, components/StateView
-  pages/FlowDetail.tsx → imports: hooks/AppStateContext, hooks/ToastProvider, lib/repos/flowRepo, lib/repos/clientRepo, services/runService, services/schedule...
+  pages/FlowDetail.tsx → imports: hooks/AppStateContext, hooks/ToastProvider, lib/repos/flowRepo, lib/repos/clientRepo, services/runService, se...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -236,8 +237,12 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0012: 빌더 페이지 /flows/new, /flows/:flowId/edit (files: src/pages/Builder.tsx, src/hooks/useBuilderSave.ts, src/pages/Builder.test.tsx)
 - 0013: 플로우 상세 /flows/:flowId (files: src/pages/FlowDetail.tsx, src/pages/FlowDetail.test.tsx)
 - 0014: 실행 상세 /runs/:runId (files: src/pages/RunDetail.tsx, src/pages/RunDetail.test.tsx)
+- 0019: 라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유) (files: src/App.tsx, src/App.test.tsx)
 
 ## Available exports from existing files
+// src/App.tsx
+export default function App() {
+
 // src/api/client.ts
 export type ApiErrorCode =
 export class ApiError extends Error {
@@ -305,9 +310,7 @@ export function EmptyState({
 export function LoadingState({
 
 // src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/Tos
+expo
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 

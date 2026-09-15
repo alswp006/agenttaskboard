@@ -86,7 +86,7 @@ const { default: GenerateResult } = await import("@/pages/GenerateResult");
 const { default: FlowDetail } = await import("@/pages/FlowDetail");
 const { default: RunDetail } = await import("@/pages/RunDetail");
 
-const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "../..");
 const CHECK_POLICY_SCRIPT = path.join(REPO_ROOT, "scripts/check-policy.mjs");
 
 function makeFixtureDir(files: Record<string, string>): string {

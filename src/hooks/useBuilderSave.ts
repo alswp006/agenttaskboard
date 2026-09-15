@@ -56,6 +56,7 @@ export function useBuilderSave({ flowId }: UseBuilderSaveArgs) {
       showToast(flowId ? '플로우를 수정했어요' : '플로우를 만들었어요');
       navigate(`/flows/${flow.id}`);
     } catch (err) {
+      console.error('DEBUG useBuilderSave error', err);
       if (err instanceof FlowLimitError) {
         showToast(err.message.replace(/^FlowLimitError:\s*/, ''));
       } else {

@@ -1,0 +1,24 @@
+{
+  "koreanName": "에이전트태스크",
+  "englishName": "AgentTaskBoard",
+  "appName": "agent-task-board",
+  "ageRating": "전체",
+  "supportEmail": "support@aifactory.dev",
+  "category": {
+    "primary": "편의/유틸"
+  },
+  "subtitle": "반복 업무를 AI에게 위임하세요",
+  "description": "드래그앤드롭으로 AI 업무 자동화를 설계합니다. 매일 뉴스를 수집해 요약 후 슬랙에 공유하거나, 엑셀 데이터를 정리해 리포트를 만들고 이메일 발송하는 반복 작업을 AI 에이전트에게 맡길 수 있습니다. 시각적 플로우 빌더에서 트리거·AI처리·액션을 연결하고, 자연어 명령으로도 자동화를 생성할 수 있습니다. 실행 로그 대시보드에서 모든 작업을 모니터링하고, 커뮤니티 템플릿으로 검증된 자동화 레시피를 즉시 활용할 수 있습니다.",
+  "searchKeywords": [
+    "AI 에이전트",
+    "업무 자동화",
+    "노코드 RPA",
+    "워크플로우 빌더",
+    "Zapier 대체",
+    "AI 어시스턴트",
+    "반복 업무",
+    "자동화 플랫폼",
+    "한국어 자동화",
+    "AI 업무 위임"
+  ]
+}

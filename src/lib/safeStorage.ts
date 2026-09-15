@@ -8,7 +8,9 @@ export interface SafeReadResult<T> {
 }
 
 function isQuotaExceededError(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
+  // jsdom's DOMException does NOT extend Error (unlike browsers), so this
+  // must duck-type on name/code instead of gating on `instanceof Error`.
+  if (typeof err !== 'object' || err === null) return false;
   const anyErr = err as { name?: string; code?: number };
   return (
     anyErr.name === 'QuotaExceededError' ||

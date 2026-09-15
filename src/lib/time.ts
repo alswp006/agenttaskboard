@@ -60,9 +60,9 @@ function randomIdSuffix(): string {
 }
 
 export function generateFlowId(): string {
-  return `flow_${randomIdSuffix()}`;
+  return `flow_${randomIdSuffix().slice(0, 8)}`;
 }
 
 export function generateRunId(): string {
-  return `run_${randomIdSuffix()}`;
+  return `run_${randomIdSuffix().slice(0, 12)}`;
 }

@@ -49,10 +49,10 @@ beforeEach(() => {
 
 describe("flowRepo — Flow CRUD with 50-item limit", () => {
   // AC-1[P0]: Flow limit enforcement
-  it("AC-1[P0]: should throw FlowLimitError when creating 51st flow", () => {
+  it("AC-1[P0]: should throw FlowLimitError when creating 51st flow", async () => {
     // We need to mock or import flowRepo when it exists
     // For now, this test describes the expected behavior
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
 
     // Create 50 valid flows
     const validFlows: Flow[] = [];
@@ -92,8 +92,8 @@ describe("flowRepo — Flow CRUD with 50-item limit", () => {
   });
 
   // Additional: flow CRUD operations
-  it("should create a flow with correct ID format (flow_xxxxxxxx)", () => {
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+  it("should create a flow with correct ID format (flow_xxxxxxxx)", async () => {
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
     mockStorage.clear();
 
     const draft: FlowDraft = {
@@ -113,8 +113,8 @@ describe("flowRepo — Flow CRUD with 50-item limit", () => {
     expect(flow.lastRunStatus).toBeNull();
   });
 
-  it("should list flows in creation order (or by updatedAt)", () => {
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+  it("should list flows in creation order (or by updatedAt)", async () => {
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
     mockStorage.clear();
 
     const flow1 = flowRepo.create({
@@ -147,8 +147,8 @@ describe("flowRepo — Flow CRUD with 50-item limit", () => {
     expect(flows[1].id).toBe(flow2.id);
   });
 
-  it("should update a flow", () => {
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+  it("should update a flow", async () => {
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
     mockStorage.clear();
 
     const flow = flowRepo.create({
@@ -175,8 +175,8 @@ describe("flowRepo — Flow CRUD with 50-item limit", () => {
     expect(updated.updatedAt).not.toBe(flow.updatedAt);
   });
 
-  it("should delete a flow", () => {
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+  it("should delete a flow", async () => {
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
     mockStorage.clear();
 
     const flow = flowRepo.create({
@@ -198,8 +198,8 @@ describe("flowRepo — Flow CRUD with 50-item limit", () => {
 
 describe("runRepo — RunLog with 200-item limit and auto-truncation", () => {
   // AC-2[P0]: Run log truncation (keep 200, delete oldest)
-  it("AC-2[P0]: should delete oldest run when adding 201st", () => {
-    const { runRepo } = require("@/lib/repos/runRepo");
+  it("AC-2[P0]: should delete oldest run when adding 201st", async () => {
+    const { runRepo } = await import("@/lib/repos/runRepo");
     mockStorage.clear();
 
     // Create 200 runs with distinct startedAt timestamps
@@ -249,14 +249,14 @@ describe("runRepo — RunLog with 200-item limit and auto-truncation", () => {
     expect(allRuns).toHaveLength(200);
 
     // Oldest should be gone
-    expect(allRuns.some((r) => r.id === oldestBefore.id)).toBe(false);
+    expect(allRuns.some((r: RunLog) => r.id === oldestBefore.id)).toBe(false);
 
     // New run should be present
-    expect(allRuns.some((r) => r.id === newRun.id)).toBe(true);
+    expect(allRuns.some((r: RunLog) => r.id === newRun.id)).toBe(true);
   });
 
-  it("should add run and maintain list", () => {
-    const { runRepo } = require("@/lib/repos/runRepo");
+  it("should add run and maintain list", async () => {
+    const { runRepo } = await import("@/lib/repos/runRepo");
     mockStorage.clear();
 
     const run: RunLog = {
@@ -289,8 +289,8 @@ describe("runRepo — RunLog with 200-item limit and auto-truncation", () => {
     expect(runs[0].aiOutput).toBe("News summary here");
   });
 
-  it("should get a run by ID", () => {
-    const { runRepo } = require("@/lib/repos/runRepo");
+  it("should get a run by ID", async () => {
+    const { runRepo } = await import("@/lib/repos/runRepo");
     mockStorage.clear();
 
     const run: RunLog = {
@@ -316,8 +316,8 @@ describe("runRepo — RunLog with 200-item limit and auto-truncation", () => {
     expect(retrieved?.errorCode).toBe("NETWORK_ERROR");
   });
 
-  it("should update sync metadata", () => {
-    const { runRepo } = require("@/lib/repos/runRepo");
+  it("should update sync metadata", async () => {
+    const { runRepo } = await import("@/lib/repos/runRepo");
     mockStorage.clear();
 
     const syncTime = new Date().toISOString();
@@ -330,8 +330,8 @@ describe("runRepo — RunLog with 200-item limit and auto-truncation", () => {
 
 describe("usageRepo — Usage with KST month-based reset", () => {
   // AC-3[P0]: Month auto-reset on read
-  it("AC-3[P0]: should reset runCount to 0 when month changed (KST)", () => {
-    const { usageRepo } = require("@/lib/repos/usageRepo");
+  it("AC-3[P0]: should reset runCount to 0 when month changed (KST)", async () => {
+    const { usageRepo } = await import("@/lib/repos/usageRepo");
     mockStorage.clear();
 
     // Set up usage from previous month
@@ -354,8 +354,8 @@ describe("usageRepo — Usage with KST month-based reset", () => {
     vi.useRealTimers();
   });
 
-  it("should preserve runCount if month hasn't changed", () => {
-    const { usageRepo } = require("@/lib/repos/usageRepo");
+  it("should preserve runCount if month hasn't changed", async () => {
+    const { usageRepo } = await import("@/lib/repos/usageRepo");
     mockStorage.clear();
 
     const currentMonth = "2026-09";
@@ -376,8 +376,8 @@ describe("usageRepo — Usage with KST month-based reset", () => {
     vi.useRealTimers();
   });
 
-  it("should increment runCount on addRun", () => {
-    const { usageRepo } = require("@/lib/repos/usageRepo");
+  it("should increment runCount on addRun", async () => {
+    const { usageRepo } = await import("@/lib/repos/usageRepo");
     mockStorage.clear();
 
     const mockNow = new Date("2026-09-15T12:00:00+09:00");
@@ -398,8 +398,8 @@ describe("usageRepo — Usage with KST month-based reset", () => {
     vi.useRealTimers();
   });
 
-  it("should return default usage on first call", () => {
-    const { usageRepo } = require("@/lib/repos/usageRepo");
+  it("should return default usage on first call", async () => {
+    const { usageRepo } = await import("@/lib/repos/usageRepo");
     mockStorage.clear();
 
     const mockNow = new Date("2026-09-15T12:00:00+09:00");
@@ -418,8 +418,8 @@ describe("usageRepo — Usage with KST month-based reset", () => {
 });
 
 describe("planRepo — Plan tier and expiration", () => {
-  it("should return default free plan on first call", () => {
-    const { planRepo } = require("@/lib/repos/planRepo");
+  it("should return default free plan on first call", async () => {
+    const { planRepo } = await import("@/lib/repos/planRepo");
     mockStorage.clear();
 
     const plan = planRepo.get();
@@ -429,8 +429,8 @@ describe("planRepo — Plan tier and expiration", () => {
     expect(plan.expiresAt).toBeNull();
   });
 
-  it("should set and get plan", () => {
-    const { planRepo } = require("@/lib/repos/planRepo");
+  it("should set and get plan", async () => {
+    const { planRepo } = await import("@/lib/repos/planRepo");
     mockStorage.clear();
 
     const newPlan: PlanState = {
@@ -447,8 +447,8 @@ describe("planRepo — Plan tier and expiration", () => {
     expect(retrieved.expiresAt).toBe("2027-09-01T00:00:00Z");
   });
 
-  it("should parse and restore corrupted plan data", () => {
-    const { planRepo } = require("@/lib/repos/planRepo");
+  it("should parse and restore corrupted plan data", async () => {
+    const { planRepo } = await import("@/lib/repos/planRepo");
     mockStorage.clear();
 
     // Set corrupted data
@@ -463,8 +463,8 @@ describe("planRepo — Plan tier and expiration", () => {
 });
 
 describe("clientRepo — Client ID and AI notice acknowledgment", () => {
-  it("should generate and persist UUID clientId on first call", () => {
-    const { clientRepo } = require("@/lib/repos/clientRepo");
+  it("should generate and persist UUID clientId on first call", async () => {
+    const { clientRepo } = await import("@/lib/repos/clientRepo");
     mockStorage.clear();
 
     const clientId1 = clientRepo.getClientId();
@@ -478,8 +478,8 @@ describe("clientRepo — Client ID and AI notice acknowledgment", () => {
     expect(clientId2).toBe(clientId1);
   });
 
-  it("should acknowledge AI notice", () => {
-    const { clientRepo } = require("@/lib/repos/clientRepo");
+  it("should acknowledge AI notice", async () => {
+    const { clientRepo } = await import("@/lib/repos/clientRepo");
     mockStorage.clear();
 
     expect(clientRepo.hasAiNoticeAck()).toBe(false);
@@ -495,8 +495,8 @@ describe("clientRepo — Client ID and AI notice acknowledgment", () => {
     vi.useRealTimers();
   });
 
-  it("should persist AI notice ack across loads", () => {
-    const { clientRepo } = require("@/lib/repos/clientRepo");
+  it("should persist AI notice ack across loads", async () => {
+    const { clientRepo } = await import("@/lib/repos/clientRepo");
     mockStorage.clear();
 
     clientRepo.acknowledgeAiNotice();
@@ -510,8 +510,8 @@ describe("clientRepo — Client ID and AI notice acknowledgment", () => {
 });
 
 describe("Edge cases and error handling", () => {
-  it("should handle QuotaExceededError by clearing old runs and retrying", () => {
-    const { runRepo } = require("@/lib/repos/runRepo");
+  it("should handle QuotaExceededError by clearing old runs and retrying", async () => {
+    const { runRepo } = await import("@/lib/repos/runRepo");
     mockStorage.clear();
 
     // Pre-fill with 200 runs
@@ -559,8 +559,8 @@ describe("Edge cases and error handling", () => {
     mockStorage.simulateQuotaExceeded = false;
   });
 
-  it("should parse and recover corrupted flow data", () => {
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+  it("should parse and recover corrupted flow data", async () => {
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
     mockStorage.clear();
 
     // Set corrupted JSON
@@ -573,8 +573,8 @@ describe("Edge cases and error handling", () => {
     expect(mockStorage.getItem("atb:flows")).toBe("[]");
   });
 
-  it("should handle malformed but parseable JSON (not an array)", () => {
-    const { flowRepo } = require("@/lib/repos/flowRepo");
+  it("should handle malformed but parseable JSON (not an array)", async () => {
+    const { flowRepo } = await import("@/lib/repos/flowRepo");
     mockStorage.clear();
 
     // Set JSON that parses but isn't an array

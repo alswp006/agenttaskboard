@@ -32,9 +32,11 @@ export function mockTds() {
     FixedBottomCTA: ({ children, onClick, disabled, loading, ...props }: any) =>
       React.createElement("button", { onClick, disabled: disabled || loading || undefined, "data-loading": loading ? "true" : undefined, ...props }, children),
 
+    // 실제 ListRow는 children이 아니라 contents/left/right prop으로 콘텐츠를 받는다(.d.ts 검증).
+    // 그대로 스프레드하면 ReactNode가 DOM 속성([object Object])으로 깔려 안 보이므로 자식으로 렌더한다.
     ListRow: Object.assign(
-      ({ children, onClick, ...props }: any) =>
-        React.createElement("div", { onClick, role: "listitem", ...props }, children),
+      ({ children, onClick, contents, left, right, ...props }: any) =>
+        React.createElement("div", { onClick, role: "listitem", ...props }, left, contents, right, children),
       {
         Text: ({ children }: any) => React.createElement("span", null, children),
         Texts: ({ top, bottom, type }: any) =>
@@ -128,6 +130,17 @@ export function mockTds() {
         ),
     ),
 
+    TextArea: React.forwardRef(
+      ({ label, help, hasError, ...props }: any, ref: any) =>
+        React.createElement(
+          "div",
+          null,
+          React.createElement("label", null, label),
+          React.createElement("textarea", { ref, ...props }),
+          hasError && help && React.createElement("span", { role: "alert" }, help),
+        ),
+    ),
+
     Top: Object.assign(
       ({ children, title }: any) =>
         React.createElement(
@@ -152,10 +165,14 @@ export function mockTds() {
       { Header: ({ children }: any) => React.createElement("div", null, children) },
     ),
 
-    Chip: ({ children, selected, onClick }: any) =>
+    // 실제 TDS Chip은 Chip(컨테이너) + ChipItem(개별 버튼) 조합이다(.d.ts 검증:
+    // Chip은 kind/shape/size/variant/wrap을 갖는 div, ChipItem이 selected/disabled/onClick의 button).
+    Chip: ({ children, kind, shape, size, variant, margin, wrap, ...props }: any) =>
+      React.createElement("div", { role: "group", ...props }, children),
+    ChipItem: ({ children, selected, disabled, onClick, ...props }: any) =>
       React.createElement(
         "button",
-        { role: "button", "aria-pressed": selected, onClick },
+        { type: "button", "aria-pressed": !!selected, disabled, onClick, ...props },
         children,
       ),
 

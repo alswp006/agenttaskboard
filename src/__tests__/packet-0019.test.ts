@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 
 /**
  * PACKET-0019: 라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유)
@@ -17,7 +17,7 @@ import { screen, fireEvent } from "@testing-library/react";
  */
 
 import { mockTds, mockAppsInToss } from "@/__tests__/__helpers__/mocks";
-import { renderWithRouter, seedLocalStorage, advanceTimers } from "@/__tests__/__helpers__/test-utils";
+import { renderWithRouter, seedLocalStorage } from "@/__tests__/__helpers__/test-utils";
 
 mockTds();
 mockAppsInToss();
@@ -106,13 +106,18 @@ describe("라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유)", 
     expect(screen.queryByText(EXPIRED_TOAST_MSG)).not.toBeInTheDocument();
   });
 
-  it("AC-3: 만료 Toast는 사라진 뒤 탭 이동으로 다시 뜨지 않는다(1회 보장)", async () => {
+  it("AC-3: 만료 Toast는 사라진 뒤 탭 이동으로 다시 뜨지 않는다(1회 보장)", () => {
     seedLocalStorage({ "atb:plan": expiredPlan() });
+    // Toast 타이머는 렌더 시점에 잡힌다 — 가짜 타이머를 렌더 전에 켜야 앞당길 수 있다.
+    vi.useFakeTimers();
     renderWithRouter(React.createElement(App), { initialEntries: ["/"] });
     expect(screen.getByText(EXPIRED_TOAST_MSG)).toBeInTheDocument();
 
     // Toast는 2초(TOAST_DURATION_MS) 후 큐에서 빠진다.
-    await advanceTimers(2000);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    vi.useRealTimers();
     expect(screen.queryByText(EXPIRED_TOAST_MSG)).not.toBeInTheDocument();
 
     // 다른 탭으로 이동해도 만료 Toast가 재발화되지 않아야 한다(마운트 1회성 로직).

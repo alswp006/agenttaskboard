@@ -326,8 +326,15 @@ export function mockTossRewardAd() {
 
 // ── react-router-dom ──
 // Preserve actual router + override useNavigate for assertion.
+// NOTE: uses vi.doMock (not vi.mock) — same hoisting pitfall as mockTossRewardAd above:
+// vi.mock's hoisting is purely syntactic and lifts the call to file-top even nested inside
+// this function body, so it would register unconditionally (with no useParams override) for
+// every file that merely imports this helper module, silently winning over a test file's own
+// local vi.mock("react-router-dom", ...) override (e.g. one that adds useParams — observed
+// 2026-09-16 breaking packet-0013's flowId routing). vi.doMock is not hoisted, so this only
+// takes effect when a test file actually calls mockRouter(), preserving opt-in semantics.
 export function mockRouter() {
-  vi.mock("react-router-dom", async () => {
+  vi.doMock("react-router-dom", async () => {
     const actual = await vi.importActual<typeof import("react-router-dom")>(
       "react-router-dom",
     );

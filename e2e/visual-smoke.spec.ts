@@ -10,17 +10,43 @@ import { test, expect, type Page } from "@playwright/test";
  *   1) ROUTES에 핵심 화면을 추가(폼/결과/목록/설정 등)
  *   2) 데이터가 필요한 화면은 seed()에서 localStorage를 채워라
  */
+const SMOKE_FLOW_ID = "flow_smoketest01";
+
 const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/generate/result", name: "generate-result" },
+  { path: `/flows/${SMOKE_FLOW_ID}`, name: "flow-detail" },
   // { path: "/settings", name: "settings" },
 ];
 
 /** 데이터가 필요한 화면용 localStorage 시드(앱에 맞게 채워라). 앱 스크립트보다 먼저 실행된다. */
 async function seed(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    // window.localStorage.setItem("MY_STORAGE_KEY", JSON.stringify({ /* ... */ }));
-  });
+  await page.addInitScript(
+    ({ flowId }) => {
+      window.localStorage.setItem(
+        "atb:flows",
+        JSON.stringify([
+          {
+            id: flowId,
+            name: "아침 뉴스 요약",
+            input: { type: "news_keyword", keyword: "뉴스" },
+            trigger: { type: "daily", time: "09:00" },
+            aiStep: { task: "summarize", instruction: "", targetLanguage: null },
+            actions: [{ type: "slack_webhook", webhookUrl: "https://hooks.slack.com/services/T0000/B0000/XXXXXXXXXXXXXXXXXXXXXXXX" }],
+            source: "manual",
+            templateId: null,
+            enabled: false,
+            nextRunAt: null,
+            lastRunAt: null,
+            lastRunStatus: null,
+            createdAt: "2026-09-01T00:00:00.000Z",
+            updatedAt: "2026-09-01T00:00:00.000Z",
+          },
+        ]),
+      );
+    },
+    { flowId: SMOKE_FLOW_ID },
+  );
 }
 
 // 토스 WebView 밖(일반 브라우저)에서만 나는 알려진 dev 에러 — 무시(실기기 WebView엔 안 남)

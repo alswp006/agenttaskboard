@@ -10,13 +10,24 @@ import { screen, within, fireEvent } from "@testing-library/react";
  * AC-3[P0]: plan.tier가 free면 미리보기가 TossRewardAd 안에 렌더링되고, pro면 광고 없이 바로 보인다
  */
 
-import { mockTds, mockAppsInToss, mockRouter, mockNavigate, mockLocation } from "@/__tests__/__helpers__/mocks";
+import { mockTds, mockAppsInToss, mockNavigate, mockLocation } from "@/__tests__/__helpers__/mocks";
 import { renderWithRouter } from "@/__tests__/__helpers__/test-utils";
 import type { FlowDraft } from "@/lib/types";
 
 mockTds();
 mockAppsInToss();
-mockRouter();
+
+// mocks.ts의 mockRouter()는 vi.doMock(비-hoisted)이라 opt-in 호출 시점 이후의 import에만 적용된다.
+// 이 테스트는 useNavigate/useLocation만 있으면 되므로, packet-0013.test.ts와 같은 패턴으로
+// 파일 최상단에서 hoisting되는 리터럴 vi.mock을 직접 써서 순서 문제를 원천 차단한다.
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useLocation: () => mockLocation,
+  };
+});
 
 // 실제 경로는 @/hooks/AppStateContext (test-utils의 mockAppState()가 커버하는
 // @/state/AppStateContext, @/lib/store/AppStore가 아님 — 프로젝트 실제 파일 확인 완료).

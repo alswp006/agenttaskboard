@@ -4,6 +4,8 @@
 // 화면 패킷: 이 파일을 건드리지 마라 — 자기 페이지 파일(자리 페이지)만 통째로 교체한다.
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AppStateProvider } from './hooks/AppStateContext';
+import { ToastProvider } from './hooks/ToastProvider';
 import Home from './pages/Home';
 import Generate from './pages/Generate';
 import GenerateResult from './pages/GenerateResult';
@@ -24,28 +26,32 @@ const DevTdsGallery = import.meta.env.DEV
 export default function App() {
   return (
     // @ai-factory:providers — 전역 Provider는 <Routes>를 감싸는 이 자리에 둔다(main.tsx는 @AI:ANCHOR, 수정 금지).
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/generate" element={<Generate />} />
-      <Route path="/generate/result" element={<GenerateResult />} />
-      <Route path="/flows/:flowId" element={<FlowDetail />} />
-      <Route path="/runs/:runId" element={<RunDetail />} />
-      <Route path="/runs" element={<Runs />} />
-      <Route path="/templates" element={<Templates />} />
-      <Route path="/templates/:templateId" element={<TemplateDetail />} />
-      <Route path="/plan" element={<Plan />} />
-      {DevTdsGallery && (
-        <Route
-          path="/__tds-gallery"
-          element={
-            <Suspense fallback={null}>
-              <DevTdsGallery />
-            </Suspense>
-          }
-        />
-      )}
-      {/* 미정의 경로 → 홈. NotFound 화면이 설계에 생기면 이 줄을 그 화면으로 바꿔라. */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AppStateProvider>
+      <ToastProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/generate" element={<Generate />} />
+          <Route path="/generate/result" element={<GenerateResult />} />
+          <Route path="/flows/:flowId" element={<FlowDetail />} />
+          <Route path="/runs/:runId" element={<RunDetail />} />
+          <Route path="/runs" element={<Runs />} />
+          <Route path="/templates" element={<Templates />} />
+          <Route path="/templates/:templateId" element={<TemplateDetail />} />
+          <Route path="/plan" element={<Plan />} />
+          {DevTdsGallery && (
+            <Route
+              path="/__tds-gallery"
+              element={
+                <Suspense fallback={null}>
+                  <DevTdsGallery />
+                </Suspense>
+              }
+            />
+          )}
+          {/* 미정의 경로 → 홈. NotFound 화면이 설계에 생기면 이 줄을 그 화면으로 바꿔라. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ToastProvider>
+    </AppStateProvider>
   );
 }

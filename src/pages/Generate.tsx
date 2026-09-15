@@ -1,11 +1,48 @@
-// @ai-factory:placeholder
-// 배선 선행(wiring-first)이 깐 자리 페이지다 — App.tsx에 `/generate`로 이미 연결돼 있다.
-// 이 화면을 담당하는 패킷은 이 파일을 **통째로 교체**하라(위 마커 주석 포함 — 마커가 남으면 산출물로 인정되지 않는다).
+import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Top, TextArea, Paragraph, Spacing } from '@toss/tds-mobile';
+import type { RouteState } from '@/lib/types';
+import { ScreenScaffold } from '@/components/ScreenScaffold';
+import { SubmitFooter } from '@/components/BottomCTA';
+import { AiNoticeDialog } from '@/components/AiNoticeDialog';
+import { useKeyboardAware } from '@/hooks/useKeyboardAware';
+import { useGenerateSubmit } from '@/hooks/useGenerateSubmit';
+
+const PROMPT_PLACEHOLDER = '예: 매주 월요일 9시에 뉴스를 요약해서 슬랙으로 보내줘';
+const PROMPT_MAX_LENGTH = 500;
+
 export default function Generate() {
+  const location = useLocation();
+  const routeState = (location.state as RouteState['/generate']) ?? null;
+  const [prompt, setPrompt] = useState(routeState?.prompt ?? '');
+  const { onFieldFocus } = useKeyboardAware();
+  const { submit, loading, onAiNoticeAck } = useGenerateSubmit();
+
+  const valid = prompt.trim().length > 0;
+
+  function handleSubmit() {
+    submit(prompt.trim());
+  }
+
   return (
-    <main data-testid="placeholder-generate">
-      <h1>AI 생성 입력 F4</h1>
-      <p>이 화면은 준비 중이에요.</p>
-    </main>
+    <ScreenScaffold
+      top={<Top title={<Top.TitleParagraph>AI로 플로우 만들기</Top.TitleParagraph>} />}
+      bottom={<SubmitFooter label="만들기" onClick={handleSubmit} disabled={!valid} loading={loading} />}
+    >
+      <Paragraph.Text typography="st11">
+        자동화하고 싶은 일을 적어주세요. AI가 트리거와 실행 단계를 만들어 드릴게요.
+      </Paragraph.Text>
+      <Spacing size={16} />
+      <TextArea
+        variant="box"
+        label="무엇을 자동화할까요"
+        placeholder={PROMPT_PLACEHOLDER}
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        onFocus={onFieldFocus}
+        maxLength={PROMPT_MAX_LENGTH}
+      />
+      <AiNoticeDialog onAck={onAiNoticeAck} />
+    </ScreenScaffold>
   );
 }

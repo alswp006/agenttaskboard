@@ -14,6 +14,7 @@ const SMOKE_RUN_ID = "run_smoke0001";
 
 const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
+  { path: "/generate", name: "generate" },
   { path: "/generate/result", name: "generate-result" },
   { path: `/runs/${SMOKE_RUN_ID}`, name: "run-detail" },
   // { path: "/settings", name: "settings" },

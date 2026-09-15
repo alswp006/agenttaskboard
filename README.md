@@ -1,205 +1,50 @@
-🇺🇸 [한국어](./README.ko.md)
+# AgentTaskBoard
 
-# AgentTaskBoard — AI-Powered Workflow Automation
-
-A Toss mini-app for creating, managing, and executing AI-generated and manual workflows. Users can automate data processing and actions through scheduled triggers, multiple input sources, and integrations with Slack, Google Sheets, and more.
-
-## Features
-
-- 🤖 **AI-Powered Workflow Generation** — Generate workflow configurations from natural language descriptions
-- 🔨 **Workflow Builder** — Manually create workflows with triggers, AI processing steps, and multi-step actions
-- 📋 **Workflow Templates** — Pre-built workflow templates for common automation patterns
-- ⏰ **Flexible Scheduling** — Trigger workflows manually, daily, or on custom weekly schedules
-- 📊 **Multiple Input Sources** — Ingest data from text, Google Sheets, or news keywords
-- 🔗 **Multi-Action Pipeline** — Orchestrate up to 3 sequential actions per workflow (in-app, Slack webhooks, Google Sheets append)
-- 📈 **Execution Logs** — Track all workflow runs with detailed step-by-step results and error diagnostics
-- 💳 **Subscription Plans** — Free, Starter, and Pro tiers with usage quotas and feature access
-- 🎯 **AI Notice Compliance** — Built-in first-use disclosure for AI-generated content per Korean regulation
+앱인토스 (Vite + React + TDS) AI 에이전트에게 업무를 위임하는 것이 일상이 된 2026년, 비개발자 직장인이 복잡한 코딩 없이 AI 에이전트 업무 파이프라인을 시각적으로 설계·실행·모니터링하는 노코드 오케스트레이션 툴 Cursor·Claude Agent·n8n 등 AI 에이전트 툴이 쏟아지지만, 비개발자가 쓰기엔 여전히 코드·API 이해가 필요함. '엑셀 데이터 정리 → 요약 리포트 → 이메일 발송' 같은 반복 업무를 AI에게 맡기고 싶은데 자동화 설정이 너무 복잡. 기존 RPA 툴(Zapier 등)은 영어에 비쌈.
 
 ## Tech Stack
 
-- **Frontend Framework** — React 18 + TypeScript + Vite
-- **UI Components** — Toss Design System (@toss/tds-mobile)
-- **Styling** — Emotion
-- **Routing** — React Router v7
-- **State Management** — React Context + localStorage
-- **Testing** — Vitest + @testing-library/react
-- **Visual Testing** — Playwright
-- **Platform** — App-in-Toss WebView (CSR only, no SSR)
+- React 18.0.0
+- TypeScript
+- Vitest
+
+## Routes
+
+| Path | Description |
+|------|-------------|
+| `/Builder` | Builder |
+| `/FlowDetail` | FlowDetail |
+| `/Generate` | Generate |
+| `/GenerateResult` | GenerateResult |
+| `/Home` | Home |
+| `/Plan` | Plan |
+| `/RunDetail.test` | RunDetailtest |
+| `/RunDetail` | RunDetail |
+| `/Runs` | Runs |
+| `/TemplateDetail` | TemplateDetail |
+| `/Templates` | Templates |
 
 ## Getting Started
 
-### Installation
+```bash
+pnpm install
+pnpm dev
+```
+
+## Development
 
 ```bash
-npm install
+pnpm typecheck    # Type checking
+pnpm test         # Run tests
+pnpm build        # Production build
 ```
 
-### Development & Testing
+## Design Documents
 
-```bash
-# Type check
-npx tsc --noEmit
+See `.ai-factory/` directory for full design artifacts:
+- `prd.md` — Product Requirements Document
+- `spec.md` — Technical Specification
+- `task.md` — Epic/Task Breakdown
 
-# Run unit tests
-npx vitest run
-
-# Run visual regression tests
-npm run test:visual
-
-# Update visual snapshots
-npm run test:visual:update
-```
-
-### Production Build
-
-```bash
-# Build for production
-npx vite build
-
-# Deploy to Toss CDN (handled by CI/CD pipeline)
-npx ait deploy --api-key <KEY>
-```
-
-## Environment Variables
-
-| Variable | Description | Required |
-|---|---|---|
-| `VITE_API_BASE_URL` | External API server base URL (e.g., `https://api.example.com`) | Yes |
-| `VITE_TOSS_AD_GROUP_ID` | Toss Ads banner group ID (for free plan users) | No |
-| `VITE_TOSS_AD_SLOT_ID` | Toss Ads reward slot ID (for AI generation preview gate) | No |
-| `VITE_TOSS_IAP_SKU` | In-app purchase product SKU (for plan upgrades) | No |
-
-Example:
-```env
-VITE_API_BASE_URL=https://api.agenttaskboard.com
-VITE_TOSS_AD_GROUP_ID=atb-banner-001
-VITE_TOSS_AD_SLOT_ID=atb-generate-preview
-VITE_TOSS_IAP_SKU=atb.starter.monthly
-```
-
-## Project Structure
-
-```
-src/
-  pages/              # Page components (Home, Builder, FlowDetail, RunDetail, etc.)
-  components/         # Reusable UI components (ScreenScaffold, Card, StateView, FloatingTabBar, etc.)
-  api/                # API client and server integration
-  hooks/              # Custom React hooks (AppStateContext, ToastProvider, etc.)
-  services/           # Business logic services (validation, formatting, metrics, etc.)
-  lib/                # Utilities (storage helpers, validators, formatters, templates, etc.)
-  types/              # TypeScript domain types (Flow, FlowDraft, RunLog, Plan, etc.)
-  navigation/         # Route and navigation state types
-  data/               # Static data (templates, sample data)
-  styles/             # Global styles and CSS variables
-  __tests__/          # Unit and integration tests
-```
-
-## Core Concepts
-
-### Workflows (Flows)
-
-A workflow consists of:
-- **Input** — Data source (text, Google Sheet range, news keyword)
-- **Trigger** — Execution schedule (manual, daily at HH:mm, weekly on specific days)
-- **AI Step** — Processing task (summarize, classify, translate, custom instruction)
-- **Actions** — 1–3 sequential operations (in-app, Slack webhook, Google Sheets append)
-
-Workflows can be created manually via the Builder or generated by AI via `/generate`.
-
-### Execution Logs (Runs)
-
-Each workflow execution is recorded with:
-- Trigger type (manual or scheduled)
-- Step-by-step results (input fetch, AI processing, action delivery)
-- Error diagnostics (with error codes for network, quota, auth failures)
-- AI output snapshot (for results review and audit)
-
-### Plans
-
-Three subscription tiers:
-- **Free** — Limited runs per month, basic features, banner ads, reward ad gate on AI generation
-- **Starter** — Increased quota, no ads
-- **Pro** — Maximum quota, priority support
-
-## Key Features in Detail
-
-### AI-Powered Generation (`/generate`)
-- User provides a workflow description in natural language
-- AI generates a complete FlowDraft
-- Preview before saving (gated by reward ad for free users)
-- Compliance: First-time users see AI notice per CP-2 (G-AC-8)
-
-### Workflow Builder (`/flows/new`, `/flows/:flowId/edit`)
-- Step-by-step form for manual flow creation
-- Input source picker (text, Google Sheets, news keyword)
-- Trigger configuration (daily time or weekly schedule)
-- AI step editor (task type, instruction, target language)
-- Action pipeline builder (up to 3 actions)
-- Error validation with user-friendly messages
-
-### Execution & Monitoring
-- Run workflows manually from flow detail or schedule page
-- View live execution logs with status badges
-- Inspect step results and error details
-- Download or share run results (within compliance limits)
-
-### Subscription Management (`/plan`)
-- View current plan tier and usage quota
-- Upgrade/downgrade via in-app purchase
-- See quota reset schedule (monthly, aligned to plan billing)
-
-## Deployment
-
-This app is deployed to the **Toss CDN** as a standalone mini-app. The build process is:
-
-1. **Local build** — `npx vite build` creates a static SPA in `dist/`
-2. **CI validation** — Type check, tests, and linting pass before merge
-3. **Toss deployment** — Pipeline runs `npx ait deploy` to upload to CDN
-4. **Runtime** — App runs in Toss WebView (CSR only, no SSR)
-
-**Deployment constraints:**
-- No external domain navigation (outlinks) per G-AC-1
-- Zero console errors per G-AC-2
-- CORS properly configured for external API per G-AC-3
-- No external analytics tools; uses SDK `Analytics` only per G-AC-6
-- No hardcoded HEX colors; uses `var(--tds-color-*)` per G-AC-7
-
-## Testing
-
-### Unit & Integration Tests
-```bash
-npx vitest run
-```
-Tests located in `src/__tests__/` using:
-- Vitest (test runner)
-- @testing-library/react (component testing)
-- Mock helpers for TDS and SDK API
-
-### Visual Regression Tests
-```bash
-npm run test:visual
-```
-Playwright captures screenshots of all major routes and compares against baseline (`e2e/__shots__/`). Catches layout breaks, white screens, and text overflow invisible to unit tests.
-
-### Pre-submission Checklist
-1. `npx tsc --noEmit` — Fix all TypeScript errors
-2. `npx vitest run` — All tests pass
-3. `npm run test:visual` — No visual regressions
-4. Manual smoke test: navigate all 4 tab roots and sub-routes
-5. Browser console clean: zero `console.error` calls
-
-## Compliance & Standards
-
-- **Age** — Users must be 19+ (no minor-targeted content per G-AC-5)
-- **Outlinks** — No external domain navigation per G-AC-1
-- **Analytics** — SDK `Analytics` only; no external tools (GA, Amplitude, etc.) per G-AC-6
-- **Colors** — TDS semantic colors only; no hardcoded HEX per G-AC-7
-- **Web API** — Android 7+ / iOS 16+ compatible; no modern-only APIs per G-AC-4
-- **AI Disclosure** — First-time users see AI notice; results labeled per G-AC-8 and G-AC-9
-- **Haptic** — Success feedback on primary CTAs per UI design spec
-- **Dark Mode** — All TDS components auto-support; no light-mode-only colors
-
-## License
-
-MIT
+---
+Built with [AI Factory](https://github.com/alswp006/ai-factory) · Last synced: 2026-09-15

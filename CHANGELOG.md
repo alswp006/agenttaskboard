@@ -1,8 +1,8 @@
 # Changelog
 
-## [0.1.0] - 2026-09-15
+## [0.1.0] - 2026-09-16
 
-16/20 packets completed.
+20/20 packets completed.
 
 ### Added
 - feat: 도메인 타입 + RouteState 계약 (packet 0001)
@@ -19,5 +19,9 @@
 - feat: 빌더 페이지 /flows/new, /flows/:flowId/edit (packet 0012)
 - feat: 플로우 상세 /flows/:flowId (packet 0013)
 - feat: 실행 상세 /runs/:runId (packet 0014)
+- feat: 실행 로그 대시보드 /runs (packet 0015)
+- feat: [부가] 템플릿 목록 /templates (packet 0016)
+- feat: [부가] 템플릿 상세 /templates/:templateId (packet 0017)
+- feat: [부가] 요금제 /plan (packet 0018)
 - feat: 라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유) (packet 0019)
 - feat: 광고 배치·정책 정적 검사 + 최종 폴리시 (packet 0020)

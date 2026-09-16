@@ -1,126 +1,51 @@
-🇺🇸 [한국어](./README.ko.md)
+# AgentTaskBoard
 
-# AgentTaskBoard — AI-powered workflow automation for Toss
-
-AgentTaskBoard is a mini-app for the Toss platform that enables users to create, manage, and execute AI-generated workflows. Build custom automation flows, generate them from natural language, save templates, and track execution logs—all within a sleek mobile-first interface.
-
-## Features
-
-- 🔄 **Flow Builder** — Drag-and-drop interface to create automation workflows with multiple action types
-- 🤖 **AI Generation** — Generate complete workflows from natural language descriptions using generative AI
-- 📋 **Template Management** — Save and reuse workflow templates with 6 bundled templates included
-- 📊 **Execution Logs** — Track up to 200 recent workflow executions with detailed results and status
-- 💳 **Flexible Pricing** — Free and paid plans with monthly execution quotas and quota tracking
-- 📈 **Usage Dashboard** — Monitor execution quota, storage usage, and plan status
-- 🎯 **Run Details** — View detailed results and output from individual executions
+앱인토스 (Vite + React + TDS) AI 에이전트에게 업무를 위임하는 것이 일상이 된 2026년, 비개발자 직장인이 복잡한 코딩 없이 AI 에이전트 업무 파이프라인을 시각적으로 설계·실행·모니터링하는 노코드 오케스트레이션 툴 Cursor·Claude Agent·n8n 등 AI 에이전트 툴이 쏟아지지만, 비개발자가 쓰기엔 여전히 코드·API 이해가 필요함. '엑셀 데이터 정리 → 요약 리포트 → 이메일 발송' 같은 반복 업무를 AI에게 맡기고 싶은데 자동화 설정이 너무 복잡. 기존 RPA 툴(Zapier 등)은 영어에 비쌈.
 
 ## Tech Stack
 
-- **Framework** — Vite 6.3 + React 18 + TypeScript 5.8
-- **Routing** — React Router 7.5
-- **UI Components** — Toss Design System (@toss/tds-mobile)
-- **App Integration** — App-in-Toss SDK (@apps-in-toss/web-framework)
-- **Styling** — Emotion (@emotion/react, @emotion/styled)
-- **State Management** — React Context API + localStorage
-- **Testing** — Vitest + @testing-library/react + Playwright (visual)
-- **Icons** — lucide-react
+- React 18.0.0
+- TypeScript
+- Vitest
+
+## Routes
+
+| Path | Description |
+|------|-------------|
+| `/Builder` | Builder |
+| `/FlowDetail` | FlowDetail |
+| `/Generate` | Generate |
+| `/GenerateResult` | GenerateResult |
+| `/Home` | Home |
+| `/Plan` | Plan |
+| `/RunDetail.test` | RunDetailtest |
+| `/RunDetail` | RunDetail |
+| `/Runs` | Runs |
+| `/TemplateDetail` | TemplateDetail |
+| `/Templates.test` | Templatestest |
+| `/Templates` | Templates |
 
 ## Getting Started
 
-### Prerequisites
+```bash
+pnpm install
+pnpm dev
+```
 
-- Node.js 18+ and npm
-
-### Installation
+## Development
 
 ```bash
-npm install
+pnpm typecheck    # Type checking
+pnpm test         # Run tests
+pnpm build        # Production build
 ```
 
-### Building for Production
+## Design Documents
 
-```bash
-npm run build
-```
+See `.ai-factory/` directory for full design artifacts:
+- `prd.md` — Product Requirements Document
+- `spec.md` — Technical Specification
+- `task.md` — Epic/Task Breakdown
 
-This generates a production-optimized bundle in `dist/` ready for deployment.
-
-### Toss Deployment
-
-To build and prepare for App-in-Toss deployment:
-
-```bash
-npm run build
-npx ait build
-```
-
-Then submit the build through the Toss developer console for review.
-
-## Environment Variables
-
-| Variable | Description | Required |
-|---|---|---|
-| `VITE_API_BASE_URL` | Base URL for backend API server | Yes |
-| `VITE_TOSS_AD_GROUP_ID` | Toss banner ad group ID | No |
-| `VITE_TOSS_AD_SLOT_ID` | Toss reward ad slot ID | No |
-
-Environment variables are loaded from `.env` (git-ignored) or `.env.local`.
-
-## Project Structure
-
-```
-src/
-  ├── pages/              # Page components (Home, Generate, Builder, etc.)
-  ├── components/         # Reusable UI components (Card, StateView, FloatingTabBar, etc.)
-  ├── hooks/              # Custom hooks (AppStateContext, ToastProvider)
-  ├── lib/                # Utilities, types, and storage helpers
-  │   ├── types.ts        # Shared domain types and RouteState contracts
-  │   ├── format.ts       # Formatting utilities
-  │   ├── errors.ts       # Error codes and messages
-  │   └── storage.ts      # localStorage helpers
-  ├── __tests__/          # Vitest unit and integration tests
-  ├── App.tsx             # Main app with routing and global providers
-  └── main.tsx            # React root and TDS provider setup
-public/
-  └── index.html          # HTML entry point
-e2e/
-  ├── visual-smoke.spec.ts # Playwright visual regression tests
-  └── __shots__/          # Visual regression snapshots
-```
-
-## Deployment
-
-### Build Process
-
-```bash
-npm run build
-```
-
-The production build:
-- Targets ES2017 and Safari 16+ for Android 7+ / iOS 16+ compatibility
-- Includes all SDK dependencies (never externalized)
-- Outputs to `dist/` directory
-
-### App-in-Toss Deployment
-
-1. **Build the bundle**
-   ```bash
-   npm run build
-   npx ait build
-   ```
-
-2. **Submit for review**
-   - Access the Toss developer console
-   - Upload the built bundle through the review flow
-   - The app will be reviewed for compliance with Toss guidelines
-
-3. **Review criteria**
-   - No external domain navigation (all flows stay within the app)
-   - Zero console errors in production build
-   - CORS headers properly configured on backend
-   - Compliance with age restrictions (19+ users only)
-   - No external analytics tools (SDK analytics only)
-
-## License
-
-MIT
+---
+Built with [AI Factory](https://github.com/alswp006/ai-factory) · Last synced: 2026-09-16

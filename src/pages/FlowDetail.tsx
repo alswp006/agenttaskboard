@@ -94,7 +94,8 @@ export default function FlowDetail() {
     try {
       const run = await runService.runNow(flow.id);
       refresh();
-      showToast('실행을 시작했어요', 'bottom');
+      // RunDetail은 하단 CTA가 없어 'bottom' 토스트가 버튼처럼 보인다 — 'top'으로 고정.
+      showToast('실행을 시작했어요', 'top');
       navigate(`/runs/${run.id}`);
     } catch (err) {
       showToast(errorMessage(err, '실행에 실패했어요'), 'top');

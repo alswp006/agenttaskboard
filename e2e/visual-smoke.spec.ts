@@ -17,6 +17,7 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/generate", name: "generate" },
   { path: "/generate/result", name: "generate-result" },
   { path: `/runs/${SMOKE_RUN_ID}`, name: "run-detail" },
+  { path: "/templates/tpl-weekly-sheet-report", name: "template-detail" },
   // { path: "/settings", name: "settings" },
 ];
 

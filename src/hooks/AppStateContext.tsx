@@ -50,6 +50,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // clientId가 없으면 여기서 생성 — 첫 마운트 1회.
   useState(() => clientRepo.getClientId());
 
+  // 부팅 시 각 엔티티가 손상됐는지 먼저 기록해둔다 — repo(flowRepo.list() 등)가 손상을
+  // 감지하면 내부적으로 즉시 복구(정상 JSON으로 덮어씀)하므로, repo 호출 뒤에 같은 키를
+  // 읽으면 항상 정상으로 보인다. 반드시 repo 호출보다 먼저 원본 상태를 읽어야 한다.
+  const corruptedRef = useRef<Record<CorruptionKey, boolean>>({
+    flows: readSafeStorage('atb:flows', []).corrupted,
+    usage: readSafeStorage('atb:usage', null).corrupted,
+    plan: readSafeStorage('atb:plan', null).corrupted,
+  });
+
   const initialPlanRef = useRef<{ plan: PlanState; expiredOnBoot: boolean } | null>(null);
   if (initialPlanRef.current === null) {
     initialPlanRef.current = loadPlan();
@@ -60,14 +69,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [usage, setUsage] = useState<UsageState>(() => usageRepo.get());
   const [plan, setPlan] = useState<PlanState>(() => initialPlanRef.current!.plan);
   const planExpiredOnBoot = initialPlanRef.current.expiredOnBoot;
-
-  // 부팅 시 각 엔티티가 손상 복구됐는지 1회 기록 — repo는 내부적으로 복구하고 알려주지 않으므로
-  // 같은 키를 직접 한 번 더 읽어 corrupted 플래그만 뽑아둔다.
-  const corruptedRef = useRef<Record<CorruptionKey, boolean>>({
-    flows: readSafeStorage('atb:flows', []).corrupted,
-    usage: readSafeStorage('atb:usage', null).corrupted,
-    plan: readSafeStorage('atb:plan', null).corrupted,
-  });
 
   const consumeCorruption = useCallback((key: CorruptionKey) => {
     const value = corruptedRef.current[key];

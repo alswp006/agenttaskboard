@@ -54,8 +54,9 @@ export function useBuilderSave({ flowId }: UseBuilderSaveArgs) {
       }
 
       refresh();
-      showToast(flowId ? '플로우를 수정했어요' : '플로우를 만들었어요');
-      navigate(`/flows/${flow.id}`);
+      showToast(flowId ? '플로우를 수정했어요' : '플로우를 만들었어요', 'top');
+      // replace: 저장 화면을 히스토리에서 지워 뒤로가기가 편집 폼으로 되돌아가지 않게 한다.
+      navigate(`/flows/${flow.id}`, { replace: true });
     } catch (err) {
       if (err instanceof FlowLimitError) {
         showToast(err.message.replace(/^FlowLimitError:\s*/, ''));

@@ -151,7 +151,7 @@ describe("빌더 페이지 /flows/new, /flows/:flowId/edit", () => {
     const created = flowRepo.list();
     expect(created).toHaveLength(1);
     expect(created[0].name).toBe("아침 브리핑");
-    expect(mockNavigate).toHaveBeenCalledWith(`/flows/${created[0].id}`);
+    expect(mockNavigate).toHaveBeenCalledWith(`/flows/${created[0].id}`, { replace: true });
   });
 
   it("기존 플로우를 /flows/:flowId/edit로 열면 폼에 기존 이름이 채워진다", () => {

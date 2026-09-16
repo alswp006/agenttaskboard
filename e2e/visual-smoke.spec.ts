@@ -18,6 +18,7 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/generate/result", name: "generate-result" },
   { path: "/runs", name: "runs" },
   { path: `/runs/${SMOKE_RUN_ID}`, name: "run-detail" },
+  { path: "/templates", name: "templates" },
   // { path: "/settings", name: "settings" },
 ];
 
@@ -87,10 +88,10 @@ for (const route of ROUTES) {
       expect(ph.trim().length, `${route.name}: 입력칸 #${i}에 placeholder 없음 → 빈 회색 박스`).toBeGreaterThan(0);
     }
 
-    // 4) 콘솔 에러 0 (알려진 dev 에러 제외) — 토스 검수는 console.error 0개 요구
-    expect(errors, `${route.name}: 콘솔 에러`).toEqual([]);
-
     // 5) 스크린샷 저장 → 끝내기 전 직접 열어 자가 리뷰(휑함/솔리드 알약 탭/부유 CTA/앵커 없음)
     await page.screenshot({ path: `e2e/__shots__/${route.name}.png`, fullPage: true });
+
+    // 4) 콘솔 에러 0 (알려진 dev 에러 제외) — 토스 검수는 console.error 0개 요구
+    expect(errors, `${route.name}: 콘솔 에러`).toEqual([]);
   });
 }

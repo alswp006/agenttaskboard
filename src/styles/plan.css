@@ -1,0 +1,18 @@
+.plan-purchase-button {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 20px;
+  background-color: var(--adaptiveBlue500);
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plan-purchase-button:disabled {
+  background-color: var(--adaptiveGrey300);
+  cursor: default;
+}

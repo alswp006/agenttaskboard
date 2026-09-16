@@ -1,33 +1,35 @@
 🇰🇷 [English](./README.md)
 
-# AgentTaskBoard — AI 기반 워크플로우 자동화
+# AgentTaskBoard — 토스용 AI 기반 워크플로우 자동화
 
-자동화된 워크플로우를 AI로 생성하고, 관리하며, 실행할 수 있는 토스 미니앱입니다. 예약된 트리거, 다양한 입력 소스, Slack, Google Sheets 등의 통합을 통해 데이터 처리와 작업을 자동화할 수 있습니다.
+AgentTaskBoard는 토스 플랫폼용 미니앱으로, 사용자가 AI 기반 워크플로우를 생성, 관리, 실행할 수 있게 해줍니다. 커스텀 자동화 흐름을 만들고, 자연어로 생성하며, 템플릿을 저장하고, 실행 로그를 추적할 수 있습니다—모두 세련된 모바일 우선 인터페이스 내에서.
 
 ## 기능
 
-- 🤖 **AI 기반 워크플로우 생성** — 자연어 설명에서 워크플로우 설정을 AI가 자동으로 생성
-- 🔨 **워크플로우 빌더** — 트리거, AI 처리 단계, 다단계 작업으로 워크플로우를 수동으로 생성
-- 📋 **워크플로우 템플릿** — 일반적인 자동화 패턴을 위한 사전 구축 템플릿
-- ⏰ **유연한 스케줄링** — 수동 실행, 매일, 또는 사용자 정의 주간 일정으로 워크플로우 트리거
-- 📊 **다양한 입력 소스** — 텍스트, Google Sheets, 뉴스 키워드로부터 데이터 수집
-- 🔗 **다중 작업 파이프라인** — 워크플로우당 최대 3개의 연속 작업 구성 (인앱, Slack 웹훅, Google Sheets 추가)
-- 📈 **실행 로그** — 모든 워크플로우 실행을 추적하며, 단계별 결과와 오류 진단 확인
-- 💳 **구독 플랜** — 무료, 스타터, 프로 티어로 사용량 할당과 기능 접근 제어
-- 🎯 **AI 공지 준수** — 한국 규제에 따른 AI 생성 콘텐츠 첫 사용 공지 내장
+- 🔄 **흐름 빌더** — 여러 액션 유형으로 자동화 워크플로우를 생성하는 드래그 앤 드롭 인터페이스
+- 🤖 **AI 생성** — 생성형 AI를 사용하여 자연어 설명으로 완전한 워크플로우 생성
+- 📋 **템플릿 관리** — 6개의 번들 템플릿이 포함된 워크플로우 템플릿을 저장하고 재사용
+- 📊 **실행 로그** — 최대 200개의 최근 워크플로우 실행을 상세한 결과 및 상태와 함께 추적
+- 💳 **유연한 요금제** — 월별 실행 한도 및 한도 추적이 있는 무료 및 유료 플랜
+- 📈 **사용 대시보드** — 실행 한도, 저장소 사용량, 플랜 상태 모니터링
+- 🎯 **실행 상세 정보** — 개별 실행의 상세한 결과 및 출력 보기
 
 ## 기술 스택
 
-- **프론트엔드 프레임워크** — React 18 + TypeScript + Vite
+- **프레임워크** — Vite 6.3 + React 18 + TypeScript 5.8
+- **라우팅** — React Router 7.5
 - **UI 컴포넌트** — Toss Design System (@toss/tds-mobile)
-- **스타일링** — Emotion
-- **라우팅** — React Router v7
-- **상태 관리** — React Context + localStorage
-- **테스팅** — Vitest + @testing-library/react
-- **시각 테스팅** — Playwright
-- **플랫폼** — App-in-Toss WebView (CSR만 지원, SSR 불가)
+- **앱 통합** — App-in-Toss SDK (@apps-in-toss/web-framework)
+- **스타일링** — Emotion (@emotion/react, @emotion/styled)
+- **상태 관리** — React Context API + localStorage
+- **테스팅** — Vitest + @testing-library/react + Playwright (visual)
+- **아이콘** — lucide-react
 
 ## 시작하기
+
+### 사전 요구사항
+
+- Node.js 18+ 및 npm
 
 ### 설치
 
@@ -35,171 +37,90 @@
 npm install
 ```
 
-### 개발 및 테스팅
-
-```bash
-# 타입 검사
-npx tsc --noEmit
-
-# 단위 테스트 실행
-npx vitest run
-
-# 시각 회귀 테스트 실행
-npm run test:visual
-
-# 시각 스냅샷 업데이트
-npm run test:visual:update
-```
-
 ### 프로덕션 빌드
 
 ```bash
-# 프로덕션 빌드
-npx vite build
-
-# 토스 CDN에 배포 (CI/CD 파이프라인에서 처리)
-npx ait deploy --api-key <KEY>
+npm run build
 ```
+
+배포 준비가 완료된 프로덕션 최적화 번들을 `dist/` 디렉토리에 생성합니다.
+
+### 토스 배포
+
+App-in-Toss 배포를 위해 빌드하고 준비하려면:
+
+```bash
+npm run build
+npx ait build
+```
+
+그 후 토스 개발자 콘솔을 통해 검토용 빌드를 제출하세요.
 
 ## 환경 변수
 
 | 변수 | 설명 | 필수 |
 |---|---|---|
-| `VITE_API_BASE_URL` | 외부 API 서버 베이스 URL (예: `https://api.example.com`) | 예 |
-| `VITE_TOSS_AD_GROUP_ID` | 토스 광고 배너 그룹 ID (무료 플랜 사용자용) | 선택 |
-| `VITE_TOSS_AD_SLOT_ID` | 토스 광고 리워드 슬롯 ID (AI 생성 미리보기 게이트용) | 선택 |
-| `VITE_TOSS_IAP_SKU` | 인앱 구매 상품 SKU (플랜 업그레이드용) | 선택 |
+| `VITE_API_BASE_URL` | 백엔드 API 서버 기본 URL | 예 |
+| `VITE_TOSS_AD_GROUP_ID` | 토스 배너 광고 그룹 ID | 아니오 |
+| `VITE_TOSS_AD_SLOT_ID` | 토스 리워드 광고 슬롯 ID | 아니오 |
 
-예시:
-```env
-VITE_API_BASE_URL=https://api.agenttaskboard.com
-VITE_TOSS_AD_GROUP_ID=atb-banner-001
-VITE_TOSS_AD_SLOT_ID=atb-generate-preview
-VITE_TOSS_IAP_SKU=atb.starter.monthly
-```
+환경 변수는 `.env`(git 무시됨) 또는 `.env.local`에서 로드됩니다.
 
 ## 프로젝트 구조
 
 ```
 src/
-  pages/              # 페이지 컴포넌트 (Home, Builder, FlowDetail, RunDetail 등)
-  components/         # 재사용 UI 컴포넌트 (ScreenScaffold, Card, StateView, FloatingTabBar 등)
-  api/                # API 클라이언트 및 서버 통합
-  hooks/              # 커스텀 React 훅 (AppStateContext, ToastProvider 등)
-  services/           # 비즈니스 로직 서비스 (검증, 포맷팅, 메트릭 등)
-  lib/                # 유틸리티 (스토리지 헬퍼, 검증자, 포매터, 템플릿 등)
-  types/              # TypeScript 도메인 타입 (Flow, FlowDraft, RunLog, Plan 등)
-  navigation/         # 라우트 및 네비게이션 상태 타입
-  data/               # 정적 데이터 (템플릿, 샘플 데이터)
-  styles/             # 전역 스타일 및 CSS 변수
-  __tests__/          # 단위 및 통합 테스트
+  ├── pages/              # 페이지 컴포넌트 (Home, Generate, Builder 등)
+  ├── components/         # 재사용 가능한 UI 컴포넌트 (Card, StateView, FloatingTabBar 등)
+  ├── hooks/              # 커스텀 훅 (AppStateContext, ToastProvider)
+  ├── lib/                # 유틸리티, 타입, 저장소 헬퍼
+  │   ├── types.ts        # 공유 도메인 타입 및 RouteState 계약
+  │   ├── format.ts       # 포맷팅 유틸리티
+  │   ├── errors.ts       # 에러 코드 및 메시지
+  │   └── storage.ts      # localStorage 헬퍼
+  ├── __tests__/          # Vitest 유닛 및 통합 테스트
+  ├── App.tsx             # 라우팅 및 전역 제공자가 있는 메인 앱
+  └── main.tsx            # React 루트 및 TDS 제공자 설정
+public/
+  └── index.html          # HTML 진입점
+e2e/
+  ├── visual-smoke.spec.ts # Playwright 시각적 회귀 테스트
+  └── __shots__/          # 시각적 회귀 스냅샷
 ```
-
-## 핵심 개념
-
-### 워크플로우 (Flows)
-
-워크플로우는 다음으로 구성됩니다:
-- **입력** — 데이터 소스 (텍스트, Google Sheet 범위, 뉴스 키워드)
-- **트리거** — 실행 일정 (수동, 매일 HH:mm, 특정 요일 주간)
-- **AI 단계** — 처리 작업 (요약, 분류, 번역, 사용자 정의 명령)
-- **작업** — 1~3개의 연속 작업 (인앱, Slack 웹훅, Google Sheets 추가)
-
-워크플로우는 빌더를 통해 수동으로 생성하거나 `/generate`를 통해 AI가 생성할 수 있습니다.
-
-### 실행 로그 (Runs)
-
-각 워크플로우 실행은 다음과 함께 기록됩니다:
-- 트리거 유형 (수동 또는 예약)
-- 단계별 결과 (입력 가져오기, AI 처리, 작업 전달)
-- 오류 진단 (네트워크, 할당량, 인증 실패를 위한 오류 코드 포함)
-- AI 출력 스냅샷 (결과 검토 및 감사용)
-
-### 플랜
-
-세 가지 구독 티어:
-- **무료** — 월 제한된 실행, 기본 기능, 배너 광고, AI 생성 시 리워드 광고 게이트
-- **스타터** — 증가된 할당량, 광고 없음
-- **프로** — 최대 할당량, 우선 지원
-
-## 주요 기능 상세
-
-### AI 기반 생성 (`/generate`)
-- 사용자가 자연어로 워크플로우 설명 제공
-- AI가 완전한 FlowDraft 생성
-- 저장 전 미리보기 (무료 사용자의 경우 리워드 광고로 게이트됨)
-- 준수: 첫 사용자에게 CP-2 (G-AC-8)에 따른 AI 공지 표시
-
-### 워크플로우 빌더 (`/flows/new`, `/flows/:flowId/edit`)
-- 수동 흐름 생성을 위한 단계별 양식
-- 입력 소스 선택기 (텍스트, Google Sheets, 뉴스 키워드)
-- 트리거 설정 (매일 시간 또는 주간 일정)
-- AI 단계 편집기 (작업 유형, 명령, 대상 언어)
-- 작업 파이프라인 빌더 (최대 3개 작업)
-- 사용자 친화적 메시지와 함께 오류 검증
-
-### 실행 및 모니터링
-- 흐름 상세 또는 일정 페이지에서 워크플로우 수동 실행
-- 상태 배지가 있는 실시간 실행 로그 보기
-- 단계별 결과 및 오류 상세 정보 검사
-- 준수 범위 내에서 실행 결과 다운로드 또는 공유
-
-### 구독 관리 (`/plan`)
-- 현재 플랜 티어 및 사용 할당량 보기
-- 인앱 구매를 통해 업그레이드/다운그레이드
-- 할당량 리셋 일정 보기 (월간, 플랜 청구 정렬)
 
 ## 배포
 
-이 앱은 **토스 CDN**에 독립 미니앱으로 배포됩니다. 빌드 프로세스는:
+### 빌드 프로세스
 
-1. **로컬 빌드** — `npx vite build`로 `dist/`에 정적 SPA 생성
-2. **CI 검증** — 병합 전 타입 검사, 테스트, 린팅 통과
-3. **토스 배포** — 파이프라인이 `npx ait deploy`로 CDN에 업로드
-4. **런타임** — 토스 WebView에서 앱 실행 (CSR만 지원, SSR 불가)
-
-**배포 제약:**
-- G-AC-1에 따른 외부 도메인 이탈(Outlinks) 금지
-- G-AC-2에 따른 콘솔 에러 0개 보장
-- G-AC-3에 따른 외부 API의 CORS 적절히 설정
-- G-AC-6에 따른 외부 분석 도구 금지, SDK `Analytics`만 사용
-- G-AC-7에 따른 HEX 색상 하드코딩 금지, `var(--tds-color-*)` 사용
-
-## 테스팅
-
-### 단위 및 통합 테스트
 ```bash
-npx vitest run
+npm run build
 ```
-`src/__tests__/`의 테스트는 다음을 사용합니다:
-- Vitest (테스트 러너)
-- @testing-library/react (컴포넌트 테스팅)
-- TDS 및 SDK API용 Mock 헬퍼
 
-### 시각 회귀 테스트
-```bash
-npm run test:visual
-```
-Playwright가 모든 주요 라우트의 스크린샷을 캡처하고 베이스라인(`e2e/__shots__/`)과 비교합니다. 레이아웃 깨짐, 흰 화면, 단위 테스트에서 감지할 수 없는 텍스트 오버플로우를 잡습니다.
+프로덕션 빌드:
+- Android 7+ / iOS 16+ 호환성을 위해 ES2017 및 Safari 16+를 대상으로 함
+- 모든 SDK 의존성 포함 (외부화되지 않음)
+- `dist/` 디렉토리로 출력
 
-### 제출 전 체크리스트
-1. `npx tsc --noEmit` — 모든 TypeScript 에러 수정
-2. `npx vitest run` — 모든 테스트 통과
-3. `npm run test:visual` — 시각 회귀 없음
-4. 수동 스모크 테스트: 4개 탭 루트 및 하위 라우트 모두 네비게이트
-5. 브라우저 콘솔 깨끗함: `console.error` 호출 0개
+### App-in-Toss 배포
 
-## 준수 및 표준
+1. **번들 빌드**
+   ```bash
+   npm run build
+   npx ait build
+   ```
 
-- **연령** — 사용자는 19세 이상이어야 함 (G-AC-5에 따른 미성년자 대상 콘텐츠 금지)
-- **외부 링크** — G-AC-1에 따른 외부 도메인 이탈 금지
-- **분석** — G-AC-6에 따른 SDK `Analytics`만 사용, 외부 도구(GA, Amplitude 등) 금지
-- **색상** — G-AC-7에 따른 TDS 시맨틱 색상만 사용, HEX 하드코딩 금지
-- **웹 API** — G-AC-4에 따른 Android 7+ / iOS 16+ 호환, 최신 전용 API 금지
-- **AI 공지** — G-AC-8 및 G-AC-9에 따른 첫 사용자 AI 공지 표시, 결과에 라벨 표시
-- **햅틱** — UI 디자인 스펙에 따른 주요 CTA의 성공 피드백
-- **다크 모드** — 모든 TDS 컴포넌트가 자동으로 지원, 라이트 모드 전용 색상 금지
+2. **검토 제출**
+   - 토스 개발자 콘솔 접속
+   - 검토 흐름을 통해 빌드된 번들 업로드
+   - 앱이 토스 가이드라인 준수 여부를 검토받습니다
 
-## 라이센스
+3. **검토 기준**
+   - 외부 도메인 이동 없음 (모든 흐름이 앱 내에서만 진행)
+   - 프로덕션 빌드의 콘솔 에러 0개
+   - 백엔드의 CORS 헤더 올바르게 설정
+   - 연령 제한 준수 (19세 이상 사용자만)
+   - 외부 분석 도구 없음 (SDK 분석만 사용)
+
+## 라이선스
 
 MIT

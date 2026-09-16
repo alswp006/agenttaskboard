@@ -70,16 +70,6 @@ export type useAppStateFn = () => { user?: { id: string; email: string }; plan: 
 /** 토스트 알림 - 모든 액션 컴포넌트에서 호출 (구현: 패킷 0007
 ```
 
-## ⏳ 시간 예약으로 미뤄진 화면 — 자리 페이지로만 존재한다(실패가 아니라 미룸)
-다음 화면 패킷은 시간 예약으로 미뤄져 이 밤에는 만들어지지 않는다. 스캐폴드(배선 선행)가 이 화면들을
-**"준비 중" 자리 페이지로 이미 import·라우트해 두었다** — 컴파일된다:
-- 0015 "실행 로그 대시보드 /runs" (src/pages/Runs.tsx, src/hooks/useRunSync.ts, src/pages/Runs.test.tsx)
-- 0016 "[부가] 템플릿 목록 /templates" (src/pages/Templates.tsx, src/pages/Templates.test.tsx)
-- 0017 "[부가] 템플릿 상세 /templates/:templateId" (src/pages/TemplateDetail.tsx, src/pages/TemplateDetail.test.tsx)
-- 0018 "[부가] 요금제 /plan" (src/pages/Plan.tsx, src/pages/Plan.test.tsx)
-- **Route·import는 그대로 두어라.** 지우지도 말고 새로 채우지도 마라 — 자리 페이지(첫 줄 `@ai-factory:placeholder`)는 그 화면 패킷의 몫이다.
-- 존재하는(실속) 화면만 배선·연결하고, 테스트·검증 범위도 실속 화면으로 좁혀라 — 자리 페이지의 내용·동작을 검증하는 테스트는 게이트에서 막힌다.
-
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
 /**
@@ -129,6 +119,7 @@ export * from '@/api/contracts';
     AppStateContext.tsx
     ToastProvider.tsx
     useBuilderSave.ts
+    useGenerateSubmit.ts
     useKeyboardAware.ts
   lib/
     contract.ts
@@ -223,7 +214,7 @@ export * from '@/api/contracts';
   lib/types.ts → imports: types/flow, types/run, types/plan, types/template, navigation/types, api/contracts
   lib/validateDraft.ts → imports: lib/types, lib/contract
   pages/Builder.tsx → imports: lib/types, lib/repos/flowRepo, lib/format, hooks/useKeyboardAware, hooks/useBuilderSave, components/builder/draftReducer, components/builder/TriggerInputSheet, components/builder/AiStepSheet, components/builder/ActionListSheet, components/ScreenScaffold, components/BottomCTA, components/Card, components/StateView
-  pages/FlowDetail.tsx → imports: hooks/AppStateContext, hooks/ToastProvider, lib/repos/flowRepo, l...
+  pages/FlowDetail.tsx → imports: hooks/AppStateContext, hooks/ToastProvid...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -234,95 +225,12 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0005: API 계약 타입 + 클라이언트 + 엔드포인트 (files: src/api/contracts.ts, src/api/client.ts, src/api/endpoints.ts, src/lib/types.ts, src/api/client.test.ts)
 - 0006: 실행 · 스케줄 · 동기화 서비스 (files: src/services/runService.ts, src/services/scheduleService.ts, src/services/syncService.ts, src/services/services.test.ts)
 - 0007: 앱 상태 Context · 전역 Toast · AI 고지 · 키보드 훅 (files: src/hooks/AppStateContext.tsx, src/hooks/ToastProvider.tsx, src/components/AiNoticeDialog.tsx, src/hooks/useKeyboardAware.ts, src/components/PlanAdSlot.tsx)
-- 0011: 빌더 섹션 — reducer · 트리거/입력 · AI · 액션 BottomSheet (files: src/components/builder/draftReducer.ts, src/components/builder/TriggerInputSheet.tsx, src/components/builder/AiStepSheet.tsx, src/components/builder/ActionListSheet.tsx, src/components/builder/builder.test.tsx)
+- 0008: 홈 — 플로우 목록 / (files: src/pages/Home.tsx, src/pages/Home.test.tsx, package.json)
+- 0009: AI 생성 입력 /generate (files: src/pages/Generate.tsx, src/hooks/useGenerateSubmit.ts, src/pages/Generate.test.tsx)
 - 0010: AI 생성 결과 /generate/result (files: src/pages/GenerateResult.tsx, src/pages/GenerateResult.test.tsx)
+- 0011: 빌더 섹션 — reducer · 트리거/입력 · AI · 액션 BottomSheet (files: src/components/builder/draftReducer.ts, src/components/builder/TriggerInputSheet.tsx, src/components/builder/AiStepSheet.tsx, src/components/builder/ActionListSheet.tsx, src/components/builder/builder.test.tsx)
 - 0012: 빌더 페이지 /flows/new, /flows/:flowId/edit (files: src/pages/Builder.tsx, src/hooks/useBuilderSave.ts, src/pages/Builder.test.tsx)
 - 0013: 플로우 상세 /flows/:flowId (files: src/pages/FlowDetail.tsx, src/pages/FlowDetail.test.tsx)
 - 0014: 실행 상세 /runs/:runId (files: src/pages/RunDetail.tsx, src/pages/RunDetail.test.tsx)
 - 0019: 라우팅 + 전역 Provider + 탭바 배선 (App.tsx 단독 소유) (files: src/App.tsx, src/App.test.tsx)
 - 0020: 광고 배치·정책 정적 검사 + 최종 폴리시 (files: scripts/check-policy.mjs, src/test/policy.test.ts, src/test/adPlacement.test.tsx)
-- 0008: 홈 — 플로우 목록 / (files: src/pages/Home.tsx, src/pages/Home.test.tsx, package.json)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/api/client.ts
-export type ApiErrorCode =
-export class ApiError extends Error {
-export const apiClient = {
-
-// src/api/contracts.ts
-export interface GenerateResponse extends Flow {}
-export const GenerateResponse = {
-export interface RunRequest {
-export interface RunResponse extends RunLog {}
-export const RunResponse = {
-export interface ListRunsResponse {
-export const ListRunsResponse = {
-export type PutScheduleRequest = Trigger;
-export interface PutScheduleResponse {
-export const PutScheduleResponse = {
-
-// src/api/endpoints.ts
-export async function generateFlow(prompt: string): Promise<Flow> {
-export async function startRun(
-export async function listRuns(
-export async function updateSchedule(
-export async function deleteSchedule(flowId: string): Promise<DeleteScheduleResponse> {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/AiNoticeDialog.tsx
-export function AiNoticeDialog({ onAck }: AiNoticeDialogProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/PlanAdSlot.tsx
-export function PlanAdSlot({ className, variant }: PlanAdSlotProps) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-expo
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(4), general(12), testing(2), ui(3)
-
-Key lessons (verify against actual code before applying):
-- [general] 화면·라우팅 등 소비자 모듈은 그것이 import하는 생산자 모듈이 병합된 뒤에만 병합하고, 순서를 지킬 수 없으면 소비자 병합과 동시에 최소 플레이스홀더를 만들어 매 병합 직후 타입체크와 빌드가 항상 통과하도록 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 전역 라우팅·탭바·Provider 배선은 개별 화면보다 먼저(초반 20% 안에) 완료하고 미구현 화면은 스텁 라우트로 연결해, 시간 예산이 소진돼도 앱이 항상 실행 가능한 상태를 유지하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)

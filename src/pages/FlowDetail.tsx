@@ -119,6 +119,7 @@ export default function FlowDetail() {
   function handleDelete() {
     if (!flow) return;
     flowRepo.delete(flow.id);
+    refresh();
     fireHaptic('error');
     setDeleteOpen(false);
     navigate('/');

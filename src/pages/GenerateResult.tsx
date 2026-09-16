@@ -18,7 +18,7 @@ const AD_SLOT_ID = import.meta.env.VITE_TOSS_AD_SLOT_ID ?? 'generate-result-prev
 export default function GenerateResult() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isFree } = useAppState();
+  const { isFree, refresh } = useAppState();
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const state = (location.state as RouteState['/generate/result']) ?? null;
@@ -51,6 +51,7 @@ export default function GenerateResult() {
     }
     try {
       const flow = flowRepo.create({ draft, source: 'ai', templateId: null });
+      refresh();
       navigate(`/flows/${flow.id}`);
     } catch (err) {
       setSaveError(

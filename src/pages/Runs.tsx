@@ -108,11 +108,22 @@ export default function Runs() {
   if (status === 'error' && runs.length === 0) {
     return (
       <ScreenScaffold top={top}>
-        <Paragraph.Text typography="t6">최신 실행 기록을 불러오지 못했어요</Paragraph.Text>
-        <Spacing size={12} />
-        <Button variant="weak" onClick={retry}>
-          다시 시도
-        </Button>
+        <EmptyState
+          icon={<Asset.ContentIcon name="iconWarningRegular" alt="실행 기록 불러오기 실패" />}
+          title="실행 기록을 불러오지 못했어요"
+          description="네트워크 연결을 확인하고 다시 시도해주세요"
+          action={
+            <>
+              <Button variant="weak" onClick={retry}>
+                다시 시도
+              </Button>
+              <Spacing size={8} />
+              <Button variant="weak" onClick={() => navigate('/flows/new')}>
+                플로우 만들기
+              </Button>
+            </>
+          }
+        />
       </ScreenScaffold>
     );
   }

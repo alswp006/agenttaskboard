@@ -117,7 +117,7 @@ describe("홈 — 플로우 목록 /", () => {
     );
     renderHome();
 
-    const alert = screen.getByTestId("home-failed-alert");
+    const alert = screen.getByTestId("home-failure-alert");
     expect(alert).toBeInTheDocument();
     expect(alert.textContent).toContain("실패");
 
@@ -131,7 +131,7 @@ describe("홈 — 플로우 목록 /", () => {
     );
     renderHome();
 
-    expect(screen.queryByTestId("home-failed-alert")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("home-failure-alert")).not.toBeInTheDocument();
   });
 
   it("AC-2: 사용량 요약 행에 이번 달 실행 횟수와 요금제 한도가 정확한 숫자로 표시된다", () => {
